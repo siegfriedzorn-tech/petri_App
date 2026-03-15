@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Angel App</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080f09;--surface:#0e1a10;--card:#132016;--card2:#192b1e;
+  --border:#2a3e2c;--accent:#3dd68c;--accent2:#2ab070;--accent-dim:#1a5c38;
+  --text:#e8f5eb;--text-dim:#7a9e82;--text-muted:#4a6450;
+  --danger:#e05050;--warm:#f0a030;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif}
+#app{display:flex;flex-direction:column;height:100vh;max-width:430px;margin:0 auto;position:relative;background:var(--bg)}
+
+/* HEADER */
+.header{padding:16px 20px 12px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.header-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.header-title{font-size:22px;font-weight:700;letter-spacing:-0.5px}
+.header-sub{font-size:12px;color:var(--text-dim);font-family:'Space Mono',monospace;margin-top:1px}
+
+/* NAV */
+.nav{position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 0 16px;z-index:200}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px 0;font-family:'Outfit',sans-serif}
+.nav-btn svg{width:22px;height:22px}
+.nav-btn span{font-size:10px}
+.nav-btn.active{color:var(--accent)}
+
+/* PAGES */
+.page{flex:1;overflow-y:auto;padding-bottom:90px;display:none}
+.page.active{display:block}
+.page::-webkit-scrollbar{width:0}
+.page-map{flex:1;display:none;overflow:hidden;padding-bottom:0}
+.page-map.active{display:flex;flex-direction:column}
+
+/* UTILS */
+.section-label{font-size:10px;font-family:'Space Mono',monospace;letter-spacing:2px;color:var(--text-muted);padding:20px 20px 8px;text-transform:uppercase}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin:0 16px 12px}
+.card-title{font-size:13px;color:var(--text-dim);margin-bottom:10px}
+.select-wrap{position:relative}
+.select-wrap select{width:100%;background:#0a1410;border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Outfit',sans-serif;font-size:15px;padding:12px 16px;appearance:none;cursor:pointer;outline:none;transition:border-color .2s}
+.select-wrap select:focus{border-color:var(--accent)}
+.select-arrow{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:#0a1410;border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:13px;cursor:pointer;transition:all .2s;white-space:nowrap;user-select:none}
+.chip.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.info-row{display:flex;gap:10px;margin:0 16px 16px}
+.info-pill{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:3px}
+.info-pill-label{font-size:10px;color:var(--text-muted);font-family:'Space Mono',monospace}
+.info-pill-value{font-size:14px;font-weight:600}
+
+/* AI BUTTON */
+.ai-btn{width:calc(100% - 32px);margin:0 16px;padding:15px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:14px;color:#040a06;font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .2s}
+.ai-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* LOADING */
+.loading-wrap{margin-top:20px}
+.loading-bar{height:3px;background:var(--border);border-radius:2px;margin:0 16px 16px;overflow:hidden}
+.loading-fill{height:100%;background:var(--accent);animation:loadAnim 1.5s ease-in-out infinite}
+@keyframes loadAnim{0%{width:0%;margin-left:0%}50%{width:60%;margin-left:20%}100%{width:0%;margin-left:100%}}
+.loading-text{text-align:center;color:var(--text-muted);font-size:13px;padding:0 20px}
+
+/* BAIT CARDS */
+.bait-card{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin:0 16px 10px;animation:fadeUp .4s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.bait-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bait-rank{width:28px;height:28px;border-radius:8px;background:var(--accent-dim);color:var(--accent);font-family:'Space Mono',monospace;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.bait-name{font-size:16px;font-weight:600;flex:1}
+.bait-type{font-size:11px;font-family:'Space Mono',monospace;color:var(--text-muted);background:#0a1410;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.bait-stars{display:flex;gap:2px;margin-bottom:6px}
+.bait-reason{font-size:13px;color:var(--text-dim);line-height:1.5}
+.error-box{margin:16px 16px 0;padding:14px;background:#1a0a0a;border:1px solid #5a2020;border-radius:12px;color:#e07070;font-size:13px}
+.empty-state{text-align:center;padding:40px 30px;color:var(--text-muted)}
+.empty-icon{font-size:48px;margin-bottom:12px;opacity:.5}
+.empty-text{font-size:14px;line-height:1.6}
+
+/* HOME */
+.home-hero{margin:20px 16px 0;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px 20px;position:relative;overflow:hidden}
+.home-hero::before{content:'🎣';position:absolute;right:16px;top:16px;font-size:48px;opacity:.15}
+.home-greeting{font-size:13px;color:var(--text-muted);margin-bottom:4px}
+.home-title{font-size:22px;font-weight:700}
+.home-water{color:var(--accent)}
+.home-stats{display:flex;gap:10px;margin:16px 16px 0}
+.stat-card{flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 12px}
+.stat-num{font-size:24px;font-weight:700;font-family:'Space Mono',monospace;color:var(--accent)}
+.stat-label{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+/* SETTINGS */
+.toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-label{font-size:15px}
+.toggle-sub{font-size:12px;color:var(--text-muted);margin-top:2px}
+.toggle{width:44px;height:26px;background:var(--accent);border-radius:13px;position:relative;cursor:pointer;flex-shrink:0}
+.toggle-knob{position:absolute;right:3px;top:3px;width:20px;height:20px;background:white;border-radius:50%;transition:right .2s}
+
+/* MAP */
+.map-wrap{position:relative;flex:1;overflow:hidden}
+#map{width:100%;height:100%}
+.map-toolbar{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:8px;z-index:500}
+.map-btn{width:40px;height:40px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.map-btn:hover,.map-btn.active{background:var(--accent-dim);color:var(--accent);border-color:var(--accent)}
+.map-water-strip{position:absolute;bottom:calc(80px + 12px);left:0;right:0;display:flex;gap:8px;overflow-x:auto;padding:0 12px;z-index:500}
+.map-water-strip::-webkit-scrollbar{height:0}
+.water-chip{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,.4);flex-shrink:0}
+.water-chip.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+.map-badge{position:absolute;top:12px;left:12px;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:6px 12px;font-size:12px;font-family:'Space Mono',monospace;z-index:500;animation:pulse 1.5s ease infinite;display:none}
+.map-badge.visible{display:block}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+
+/* TOAST */
+.toast{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--accent);color:var(--accent);border-radius:20px;padding:8px 18px;font-size:13px;z-index:999;animation:toastIn .3s ease;pointer-events:none;white-space:nowrap}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Leaflet dark override */
+.leaflet-popup-content-wrapper{background:var(--card)!important;border:1px solid var(--border)!important;border-radius:12px!important;color:var(--text)!important;box-shadow:0 4px 20px rgba(0,0,0,.5)!important}
+.leaflet-popup-tip{background:var(--card)!important}
+.leaflet-popup-content{margin:14px!important;color:var(--text)}
+.leaflet-control-zoom a{background:var(--surface)!important;color:var(--text)!important;border-color:var(--border)!important}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-dot"></div>
+    <div>
+      <div class="header-title" id="header-title">Köder</div>
+      <div class="header-sub" id="header-sub">KI-Empfehlung</div>
+    </div>
+  </div>
+
+  <!-- HOME PAGE -->
+  <div class="page active" id="page-home">
+    <div class="home-hero">
+      <div class="home-greeting">Guten Angeltag! 🌿</div>
+      <div class="home-title">Gewässer: <span class="home-water" id="home-water">Neckar – Esslingen</span></div>
+      <div style="margin-top:12px;font-size:13px;color:var(--text-dim)" id="home-fish">Barsch · Zander · Karpfen · Döbel</div>
+    </div>
+    <div class="home-stats">
+      <div class="stat-card"><div class="stat-num">5</div><div class="stat-label">Angelstellen</div></div>
+      <div class="stat-card"><div class="stat-num">3</div><div class="stat-label">Fänge heute</div></div>
+      <div class="stat-card"><div class="stat-num">12</div><div class="stat-label">Gesamt</div></div>
+    </div>
+    <div class="section-label">Tipps für heute</div>
+    <div class="card">
+      <div style="font-size:14px;color:var(--text-dim);line-height:1.7">
+        🌤️ <strong style="color:var(--text)">Gute Bedingungen</strong> an deinem Gewässer.<br/>
+        Beste Angelzeit: <strong style="color:var(--accent)">06:00 – 10:00 Uhr</strong><br/>
+        Empfohlene Zone: Unterwasser-Strukturen
+      </div>
+    </div>
+  </div>
+
+  <!-- KÖDER PAGE -->
+  <div class="page" id="page-koeder">
+    <div class="section-label">Gewässer</div>
+    <div class="card">
+      <div class="card-title">Aktuelles Gewässer</div>
+      <div class="select-wrap">
+        <select id="koeder-water-select" onchange="onKoederWaterChange(this.value)">
+          <option value="0">Neckar – Esslingen</option>
+          <option value="1">Rhein – Mannheim</option>
+          <option value="2">Donau – Ulm</option>
+          <option value="3">Bodensee – Konstanz</option>
+          <option value="4">Main – Frankfurt</option>
+        </select>
+        <span class="select-arrow">▾</span>
+      </div>
+    </div>
+    <div class="section-label">Bedingungen</div>
+    <div class="info-row">
+      <div class="info-pill">
+        <span class="info-pill-label">Jahreszeit</span>
+        <span class="info-pill-value" id="season-val">–</span>
+      </div>
+      <div class="info-pill">
+        <span class="info-pill-label">Fischarten</span>
+        <span class="info-pill-value" id="fish-val" style="font-size:12px">–</span>
+      </div>
+    </div>
+    <div class="card" style="margin:0 16px 16px">
+      <div class="card-title">Aktuelles Wetter</div>
+      <div class="chips" id="weather-chips"></div>
+    </div>
+    <button class="ai-btn" id="ai-btn" onclick="getRecommendation()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      KI-Köderempfehlung
+    </button>
+    <div class="loading-wrap" id="loading" style="display:none">
+      <div class="loading-bar"><div class="loading-fill"></div></div>
+      <p class="loading-text">Analysiere Gewässer, Jahreszeit & Wetter…</p>
+    </div>
+    <div id="error-box" class="error-box" style="display:none"></div>
+    <div id="results-section" style="display:none">
+      <div class="section-label">KI-Empfehlungen</div>
+      <div id="bait-results"></div>
+    </div>
+    <div id="empty-koeder" class="empty-state" style="padding-top:30px">
+      <div class="empty-icon">🪱</div>
+      <div class="empty-text">Wähle dein Gewässer & Wetter,<br/>dann lass die KI optimale<br/>Köder empfehlen.</div>
+    </div>
+    <div style="height:20px"></div>
+  </div>
+
+  <!-- KARTE PAGE -->
+  <div class="page-map" id="page-karte">
+    <div class="map-wrap">
+      <div id="map"></div>
+      <div class="map-badge" id="map-badge">+ Angelstelle tippen</div>
+      <div class="map-toolbar">
+        <button class="map-btn" onclick="locateMe()" title="Standort">📍</button>
+        <button class="map-btn" id="add-btn" onclick="toggleAddMode()" title="Angelstelle">🎣</button>
+        <button class="map-btn active" id="heat-btn" onclick="toggleHeat()" title="Heatmap">🌡️</button>
+      </div>
+      <div class="map-water-strip" id="water-strip"></div>
+      <div class="toast" id="toast" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS PAGE -->
+  <div class="page" id="page-settings">
+    <div class="section-label">Gewässer</div>
+    <div class="card">
+      <div class="card-title">Aktuelles Gewässer</div>
+      <div class="select-wrap">
+        <select id="settings-water-select" onchange="onSettingsWaterChange(this.value)">
+          <option value="0">Neckar – Esslingen</option>
+          <option value="1">Rhein – Mannheim</option>
+          <option value="2">Donau – Ulm</option>
+          <option value="3">Bodensee – Konstanz</option>
+          <option value="4">Main – Frankfurt</option>
+        </select>
+        <span class="select-arrow">▾</span>
+      </div>
+    </div>
+    <div class="section-label">Benachrichtigungen</div>
+    <div class="card">
+      <div class="toggle-row">
+        <div><div class="toggle-label">Score über 80%</div><div class="toggle-sub">Push-Benachrichtigung</div></div>
+        <div class="toggle"><div class="toggle-knob"></div></div>
+      </div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Schonzeit-Erinnerung</div><div class="toggle-sub">1 Woche vor Beginn</div></div>
+        <div class="toggle"><div class="toggle-knob"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="nav">
+    <button class="nav-btn" id="nav-home" onclick="goPage('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-btn active" id="nav-koeder" onclick="goPage('koeder')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6l-6 6 6 6"/><path d="M6 6c0 0 2 3 2 6s-2 6-2 6"/><circle cx="10" cy="12" r="1" fill="currentColor"/></svg>
+      <span>Köder</span>
+    </button>
+    <button class="nav-btn" id="nav-karte" onclick="goPage('karte')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      <span>Karte</span>
+    </button>
+    <button class="nav-btn" id="nav-settings" onclick="goPage('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Einstellungen</span>
+    </button>
+  </nav>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// ── DATA ──
+const WATERS = [
+  {id:0, name:"Neckar – Esslingen", lat:48.7431, lng:9.3166, fish:["Barsch","Zander","Karpfen","Döbel"]},
+  {id:1, name:"Rhein – Mannheim",   lat:49.4875, lng:8.466,  fish:["Wels","Hecht","Zander","Aal"]},
+  {id:2, name:"Donau – Ulm",        lat:48.3984, lng:9.9908, fish:["Äsche","Forelle","Barsch","Nase"]},
+  {id:3, name:"Bodensee – Konstanz",lat:47.6779, lng:9.1732, fish:["Felchen","Hecht","Barsch","Forelle"]},
+  {id:4, name:"Main – Frankfurt",   lat:50.1109, lng:8.6821, fish:["Karpfen","Brachse","Zander","Rotauge"]},
+];
+const WEATHERS = ["sonnig ☀️","bewölkt ⛅","bedeckt ☁️","leichter Regen 🌦","starker Regen 🌧","windig 🌬️","kalt & klar 🌨"];
+const SPOTS = [
+  {id:1,lat:48.7445,lng:9.318, name:"Unteres Wehr",     catches:8,  wid:0},
+  {id:2,lat:48.7415,lng:9.314, name:"Bootsanlegestelle",catches:5,  wid:0},
+  {id:3,lat:48.742, lng:9.322, name:"Schilfzone",       catches:12, wid:0},
+  {id:4,lat:49.489, lng:8.462, name:"Rheinufer Nord",   catches:7,  wid:1},
+  {id:5,lat:47.682, lng:9.178, name:"Hafeneinfahrt",    catches:4,  wid:3},
+];
+
+const HEADERS = {
+  home:     ["Home",          "Übersicht"],
+  koeder:   ["Köder",         "KI-Empfehlung"],
+  karte:    ["Karte",         "Angelkarte"],
+  settings: ["Einstellungen", "Konfiguration"],
+};
+
+let currentWater = WATERS[0];
+let currentWeather = "bewölkt ⛅";
+let currentPage = "koeder";
+let spots = [...SPOTS];
+let addMode = false;
+let heatVisible = true;
+let map = null;
+let heatLayer = null;
+
+// ── SEASON ──
+function getSeason(){
+  const m = new Date().getMonth()+1;
+  if(m>=3&&m<=5) return "Frühling";
+  if(m>=6&&m<=8) return "Sommer";
+  if(m>=9&&m<=11) return "Herbst";
+  return "Winter";
+}
+
+// ── NAVIGATION ──
+function goPage(id){
+  document.querySelectorAll('.page,.page-map').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const el = document.getElementById('page-'+id);
+  if(el) el.classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  document.getElementById('header-title').textContent = HEADERS[id][0];
+  document.getElementById('header-sub').textContent  = HEADERS[id][1];
+  currentPage = id;
+  if(id==='karte' && !map) initMap();
+  if(id==='karte' && map) setTimeout(()=>map.invalidateSize(),50);
+}
+
+// ── WATER CHANGE ──
+function setWater(idx){
+  currentWater = WATERS[idx];
+  document.getElementById('home-water').textContent = currentWater.name;
+  document.getElementById('home-fish').textContent  = currentWater.fish.join(' · ');
+  document.getElementById('fish-val').textContent   = currentWater.fish.slice(0,2).join(', ');
+  if(map) map.flyTo([currentWater.lat, currentWater.lng], 13, {duration:1.2});
+  buildWaterStrip();
+}
+function onKoederWaterChange(v){
+  setWater(+v);
+  document.getElementById('settings-water-select').value = v;
+}
+function onSettingsWaterChange(v){
+  setWater(+v);
+  document.getElementById('koeder-water-select').value = v;
+}
+
+// ── WEATHER CHIPS ──
+function buildWeatherChips(){
+  const wrap = document.getElementById('weather-chips');
+  wrap.innerHTML = '';
+  WEATHERS.forEach(w=>{
+    const d = document.createElement('div');
+    d.className = 'chip' + (w===currentWeather?' active':'');
+    d.textContent = w;
+    d.onclick = ()=>{ currentWeather=w; buildWeatherChips(); };
+    wrap.appendChild(d);
+  });
+}
+
+// ── KÖDER KI ──
+async function getRecommendation(){
+  const btn = document.getElementById('ai-btn');
+  const loading = document.getElementById('loading');
+  const errBox = document.getElementById('error-box');
+  const resSection = document.getElementById('results-section');
+  const emptyState = document.getElementById('empty-koeder');
+  btn.disabled = true;
+  loading.style.display = 'block';
+  errBox.style.display = 'none';
+  resSection.style.display = 'none';
+  emptyState.style.display = 'none';
+
+  try {
+    const prompt = `Du bist ein erfahrener Angelexperte in Deutschland. Empfehle die besten Köder für:
+
+Gewässer: ${currentWater.name}
+Fischarten: ${currentWater.fish.join(', ')}
+Jahreszeit: ${getSeason()}
+Wetter: ${currentWeather.replace(/[^\w\s\-äöüÄÖÜß]/g,'')}
+
+Gib genau 4 Köderempfehlungen. Antworte NUR mit einem validen JSON-Array ohne Backticks:
+[{"name":"Name","typ":"Kunstköder/Naturköder/Lebendköder","bewertung":5,"grund":"Max 60 Zeichen Begründung"}]`;
+
+    const resp = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})
+    });
+    const data = await resp.json();
+    let text = data.content.map(b=>b.text||'').join('');
+    text = text.replace(/```json|```/g,'').trim();
+    const baits = JSON.parse(text);
+    renderBaits(baits);
+    resSection.style.display = 'block';
+  } catch(e){
+    errBox.textContent = 'KI-Empfehlung konnte nicht geladen werden. Bitte erneut versuchen.';
+    errBox.style.display = 'block';
+    emptyState.style.display = 'block';
+  }
+  loading.style.display = 'none';
+  btn.disabled = false;
+}
+
+function renderBaits(baits){
+  const wrap = document.getElementById('bait-results');
+  wrap.innerHTML = '';
+  baits.forEach((b,i)=>{
+    const stars = Array.from({length:5},(_,j)=>`<span class="bait-stars" style="color:${j<b.bewertung?'#f0a030':'#2a3e2c'}">★</span>`).join('');
+    wrap.innerHTML += `
+      <div class="bait-card" style="animation-delay:${i*0.05}s">
+        <div class="bait-header">
+          <div class="bait-rank">#${i+1}</div>
+          <div class="bait-name">${b.name}</div>
+          <div class="bait-type">${b.typ}</div>
+        </div>
+        <div style="display:flex;gap:2px;margin-bottom:6px;font-size:14px">${stars}</div>
+        <div class="bait-reason">${b.grund}</div>
+      </div>`;
+  });
+}
+
+// ── MAP ──
+function initMap(){
+  map = L.map('map',{center:[currentWater.lat,currentWater.lng],zoom:13,zoomControl:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    attribution:'© OpenStreetMap',maxZoom:19
+  }).addTo(map);
+  L.control.zoom({position:'topright'}).addTo(map);
+
+  // Water markers
+  WATERS.forEach(w=>{
+    const icon = L.divIcon({html:`<div style="background:#132016;border:2px solid #3dd68c;border-radius:50%;width:14px;height:14px;box-shadow:0 0 8px #3dd68c66"></div>`,className:'',iconSize:[14,14],iconAnchor:[7,7]});
+    L.marker([w.lat,w.lng],{icon}).addTo(map)
+      .bindPopup(`<b style="color:#3dd68c">${w.name}</b><br/><small style="color:#7a9e82">${w.fish.join(' · ')}</small>`);
+  });
+
+  // Spot markers
+  spots.forEach(s=>addSpotMarker(s));
+  updateHeatmap();
+  buildWaterStrip();
+
+  // Click handler
+  map.on('click',e=>{
+    if(!addMode) return;
+    const s = {id:Date.now(),lat:e.latlng.lat,lng:e.latlng.lng,name:`Spot ${spots.length+1}`,catches:0,wid:currentWater.id};
+    spots.push(s);
+    addSpotMarker(s);
+    updateHeatmap();
+    toggleAddMode(false);
+    showToast('🎣 Angelstelle gespeichert');
+  });
+}
+
+function addSpotMarker(spot){
+  const sz = Math.min(8+spot.catches*2,24);
+  const icon = L.divIcon({
+    html:`<div style="background:#f0a030cc;border:2px solid #f0a030;border-radius:50%;width:${sz}px;height:${sz}px;box-shadow:0 0 10px #f0a03066"></div>`,
+    className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]
+  });
+  L.marker([spot.lat,spot.lng],{icon}).addTo(map)
+    .bindPopup(`<b style="color:#f0a030">${spot.name}</b><br/><small style="color:#7a9e82">🎣 ${spot.catches} Fänge · ${spot.wid!==undefined?WATERS[spot.wid]?.name:'–'}</small>`);
+}
+
+function updateHeatmap(){
+  if(!map) return;
+  if(heatLayer) map.removeLayer(heatLayer);
+  const pts = spots.map(s=>[s.lat,s.lng,Math.min(s.catches/12,1)]);
+  if(L.heatLayer){
+    heatLayer = L.heatLayer(pts,{radius:30,blur:20,gradient:{0.2:'#1a5c38',0.5:'#2ecc71',0.8:'#f0a030',1.0:'#e05050'}}).addTo(map);
+    if(!heatVisible) map.removeLayer(heatLayer);
+  }
+}
+
+function buildWaterStrip(){
+  const strip = document.getElementById('water-strip');
+  if(!strip) return;
+  strip.innerHTML = '';
+  WATERS.forEach(w=>{
+    const d = document.createElement('div');
+    d.className = 'water-chip'+(w.id===currentWater.id?' active':'');
+    d.textContent = w.name;
+    d.onclick = ()=>{
+      setWater(w.id);
+      document.getElementById('koeder-water-select').value = w.id;
+      document.getElementById('settings-water-select').value = w.id;
+    };
+    strip.appendChild(d);
+  });
+}
+
+function toggleAddMode(force){
+  addMode = force !== undefined ? force : !addMode;
+  const btn = document.getElementById('add-btn');
+  const badge = document.getElementById('map-badge');
+  btn.classList.toggle('active', addMode);
+  badge.classList.toggle('visible', addMode);
+  if(map) map.getContainer().style.cursor = addMode ? 'crosshair' : '';
+}
+
+function toggleHeat(){
+  if(!map || !heatLayer) return;
+  heatVisible = !heatVisible;
+  heatVisible ? heatLayer.addTo(map) : map.removeLayer(heatLayer);
+  document.getElementById('heat-btn').classList.toggle('active', heatVisible);
+}
+
+function locateMe(){
+  if(!map){ showToast('Karte noch nicht geladen'); return; }
+  if(!navigator.geolocation){ showToast('Kein GPS verfügbar'); return; }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const {latitude:lat,longitude:lng} = pos.coords;
+    map.flyTo([lat,lng],15);
+    const icon = L.divIcon({html:`<div style="background:#3dd68c;border:3px solid white;border-radius:50%;width:16px;height:16px;box-shadow:0 0 12px #3dd68c"></div>`,className:'',iconSize:[16,16],iconAnchor:[8,8]});
+    L.marker([lat,lng],{icon}).addTo(map).bindPopup('<b style="color:#3dd68c">Mein Standort</b>').openPopup();
+    showToast('📍 Standort gefunden');
+  },()=>showToast('Standort nicht verfügbar'));
+}
+
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.style.display='none', 2500);
+}
+
+// Load Leaflet.heat after Leaflet
+function loadHeat(){
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js';
+  document.head.appendChild(s);
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded',()=>{
+  loadHeat();
+  buildWeatherChips();
+  document.getElementById('season-val').textContent = getSeason();
+  document.getElementById('fish-val').textContent   = currentWater.fish.slice(0,2).join(', ');
+  goPage('koeder');
+});
+</script>
+</body>
+</html>
