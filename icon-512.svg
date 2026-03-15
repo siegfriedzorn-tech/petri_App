@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#1e4a2e"/>
+      <stop offset="100%" stop-color="#0a1f13"/>
+    </radialGradient>
+    <radialGradient id="water" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a4060" stop-opacity=".9"/>
+      <stop offset="100%" stop-color="#0a2535" stop-opacity=".7"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="circle"><circle cx="256" cy="256" r="240"/></clipPath>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+
+  <!-- Subtle water shimmer at bottom -->
+  <ellipse cx="256" cy="370" rx="200" ry="80" fill="url(#water)" clip-path="url(#circle)"/>
+
+  <!-- Water surface line -->
+  <path d="M56 310 Q130 298 180 308 Q230 318 256 305 Q282 292 332 302 Q382 312 456 300"
+        fill="none" stroke="#3a9898" stroke-width="2.5" opacity=".5"/>
+  <path d="M80 320 Q156 308 210 318 Q260 326 290 315 Q330 304 400 314 Q440 320 470 312"
+        fill="none" stroke="#3a9898" stroke-width="1.5" opacity=".3"/>
+
+  <!-- Fishing rod -->
+  <line x1="140" y1="110" x2="340" y2="230"
+        stroke="#8fd46a" stroke-width="7" stroke-linecap="round" opacity=".9"/>
+  <!-- Rod grip -->
+  <rect x="128" y="100" width="28" height="50" rx="8"
+        fill="#4fa86e" opacity=".8"/>
+  <rect x="130" y="105" width="24" height="40" rx="6"
+        fill="#3d9660"/>
+  <!-- Rod rings -->
+  <circle cx="176" cy="132" r="5" fill="none" stroke="#8fd46a" stroke-width="2.5"/>
+  <circle cx="220" cy="158" r="5" fill="none" stroke="#8fd46a" stroke-width="2.5"/>
+  <circle cx="264" cy="184" r="4" fill="none" stroke="#8fd46a" stroke-width="2"/>
+  <circle cx="308" cy="210" r="3.5" fill="none" stroke="#8fd46a" stroke-width="2"/>
+
+  <!-- Fishing line -->
+  <path d="M340 230 Q380 235 360 295 Q348 330 340 355"
+        fill="none" stroke="#dff0e4" stroke-width="1.8" opacity=".6" stroke-dasharray="4,3"/>
+
+  <!-- Lure / Gummifisch in water -->
+  <g transform="translate(295,340) rotate(-15)" filter="url(#glow)">
+    <!-- Shad body -->
+    <path d="M0 0 Q20 -12 44 -8 Q60 -4 68 0 Q60 4 44 8 Q20 12 0 0Z"
+          fill="#4fa86e" opacity=".85"/>
+    <!-- Tail -->
+    <path d="M68 0 L82 -10 L78 0 L82 10Z" fill="#4fa86e" opacity=".7"/>
+    <!-- Eye -->
+    <circle cx="12" cy="-3" r="5" fill="#8fd46a" opacity=".6"/>
+    <circle cx="12" cy="-3" r="2.5" fill="#061a10"/>
+    <circle cx="13" cy="-4" r="1" fill="white" opacity=".8"/>
+    <!-- Body segments -->
+    <path d="M28 -8 Q30 0 28 8" stroke="#3d9660" stroke-width="1.5" fill="none" opacity=".5"/>
+    <path d="M44 -8 Q46 0 44 8" stroke="#3d9660" stroke-width="1.5" fill="none" opacity=".4"/>
+    <!-- Hook -->
+    <line x1="36" y1="8" x2="36" y2="20" stroke="#c8a83a" stroke-width="2"/>
+    <path d="M36 20 Q44 24 42 16" fill="none" stroke="#c8a83a" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <!-- Ripple circles around lure -->
+  <circle cx="340" cy="348" r="18" fill="none" stroke="#3a9898" stroke-width="1.5" opacity=".4"/>
+  <circle cx="340" cy="348" r="30" fill="none" stroke="#3a9898" stroke-width="1" opacity=".25"/>
+  <circle cx="340" cy="348" r="44" fill="none" stroke="#3a9898" stroke-width=".8" opacity=".15"/>
+
+  <!-- Score arc segment (top left) -->
+  <path d="M 90 200 A 80 80 0 0 1 165 135"
+        fill="none" stroke="#4fa86e" stroke-width="6" stroke-linecap="round" opacity=".5"/>
+  <circle cx="90" cy="200" r="5" fill="#4fa86e" opacity=".6"/>
+
+  <!-- Wordmark -->
+  <text x="256" y="448" text-anchor="middle"
+        font-family="Georgia, serif" font-weight="700"
+        font-size="72" letter-spacing="8"
+        fill="#dff0e4" opacity=".95">PETRI</text>
+  <text x="256" y="478" text-anchor="middle"
+        font-family="Arial, sans-serif" font-weight="400"
+        font-size="22" letter-spacing="5"
+        fill="#7aaa86" opacity=".7">ANGELFÜHRER</text>
+
+  <!-- Outer ring -->
+  <circle cx="256" cy="256" r="246"
+          fill="none" stroke="#4fa86e" stroke-width="2" opacity=".25"/>
+  <circle cx="256" cy="256" r="252"
+          fill="none" stroke="#4fa86e" stroke-width="1" opacity=".1"/>
+</svg>
