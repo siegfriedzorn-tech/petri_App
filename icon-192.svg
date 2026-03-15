@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <radialGradient id="bg2" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#1e4a2e"/>
+      <stop offset="100%" stop-color="#0a1f13"/>
+    </radialGradient>
+    <radialGradient id="water2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a4060" stop-opacity=".9"/>
+      <stop offset="100%" stop-color="#0a2535" stop-opacity=".7"/>
+    </radialGradient>
+    <clipPath id="c2"><circle cx="96" cy="96" r="90"/></clipPath>
+  </defs>
+
+  <!-- Background -->
+  <circle cx="96" cy="96" r="96" fill="url(#bg2)"/>
+
+  <!-- Water -->
+  <ellipse cx="96" cy="138" rx="76" ry="30" fill="url(#water2)" clip-path="url(#c2)"/>
+  <path d="M20 116 Q50 110 70 116 Q85 121 96 115 Q107 109 125 115 Q148 121 172 114"
+        fill="none" stroke="#3a9898" stroke-width="1.2" opacity=".45"/>
+
+  <!-- Fishing rod -->
+  <line x1="48" y1="36" x2="132" y2="88"
+        stroke="#8fd46a" stroke-width="3.5" stroke-linecap="round" opacity=".9"/>
+  <!-- Rod grip -->
+  <rect x="42" y="30" width="14" height="22" rx="4" fill="#4fa86e" opacity=".85"/>
+
+  <!-- Line -->
+  <path d="M132 88 Q146 91 138 116 Q132 132 128 144"
+        fill="none" stroke="#dff0e4" stroke-width=".9" opacity=".55" stroke-dasharray="3,2"/>
+
+  <!-- Lure -->
+  <g transform="translate(108,132) rotate(-15)">
+    <path d="M0 0 Q8 -5 18 -3 Q24 -1.5 27 0 Q24 1.5 18 3 Q8 5 0 0Z"
+          fill="#4fa86e" opacity=".9"/>
+    <path d="M27 0 L33 -4 L31 0 L33 4Z" fill="#4fa86e" opacity=".7"/>
+    <circle cx="5" cy="-1.5" r="2.2" fill="#8fd46a" opacity=".6"/>
+    <circle cx="5" cy="-1.5" r="1.1" fill="#061a10"/>
+    <line x1="14" y1="3" x2="14" y2="9" stroke="#c8a83a" stroke-width="1.2"/>
+    <path d="M14 9 Q18 11 17 7" fill="none" stroke="#c8a83a" stroke-width="1.2" stroke-linecap="round"/>
+  </g>
+
+  <!-- Ripples -->
+  <circle cx="126" cy="136" r="8" fill="none" stroke="#3a9898" stroke-width=".9" opacity=".4"/>
+  <circle cx="126" cy="136" r="14" fill="none" stroke="#3a9898" stroke-width=".6" opacity=".22"/>
+
+  <!-- Wordmark -->
+  <text x="96" y="172" text-anchor="middle"
+        font-family="Georgia, serif" font-weight="700"
+        font-size="26" letter-spacing="4"
+        fill="#dff0e4" opacity=".95">PETRI</text>
+
+  <!-- Outer ring -->
+  <circle cx="96" cy="96" r="91"
+          fill="none" stroke="#4fa86e" stroke-width="1.5" opacity=".22"/>
+</svg>
