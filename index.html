@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<style id="layout-fix">
+.phone{display:flex!important;flex-direction:column!important;}
+.screen{flex:1!important;min-height:0!important;overflow:hidden!important;}
+.screen.active{display:flex!important;flex-direction:column!important;}
+.screen-scroll{flex:1!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;}
+.navbar{flex-shrink:0!important;position:static!important;width:100%!important;}
+</style>
+<style id="mobile-override">
+@media screen and (max-width: 768px), screen and (pointer: coarse) {
+  body {padding:0!important;margin:0!important;display:block!important;background:#0a1f13!important;overflow:hidden!important;height:100%!important;}
+  html {height:100%!important;overflow:hidden!important;}
+  .phone {width:100%!important;height:100svh!important;min-height:unset!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important;position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;display:flex!important;flex-direction:column!important;}
+  .notch{display:none!important;}
+  .screen{display:none!important;flex-direction:column!important;flex:1!important;overflow:hidden!important;height:100%!important;min-height:0!important;}
+  .screen.active{display:flex!important;}
+  .screen-scroll{flex:1!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;min-height:0!important;height:0!important;}
+  .navbar{flex-shrink:0!important;position:static!important;width:100%!important;padding-bottom:max(14px,env(safe-area-inset-bottom))!important;}
+  .detail-overlay{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;z-index:9999!important;}
+  .map-wrap{margin:0 12px!important;height:38svh!important;min-height:180px!important;max-height:260px!important;}
+  .nav-item{min-height:44px!important;}
+  .fish-pill{min-height:44px!important;}
+  .bait-item{min-height:52px!important;padding:12px 0!important;}
+}
+</style>
+<script>
+(function(){
+  var vh=window.innerHeight*0.01;
+  document.documentElement.style.setProperty('--vh',vh+'px');
+  function fixPhone(){
+    var isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+    if(!isTouch&&window.innerWidth>768)return;
+    var phone=document.querySelector('.phone');
+    if(!phone)return;
+    phone.style.cssText=['width:100%','height:'+window.innerHeight+'px','position:fixed','top:0','left:0','right:0','bottom:0','border-radius:0','box-shadow:none','overflow:hidden','display:flex','flex-direction:column'].join(';');
+    var notch=document.querySelector('.notch');
+    if(notch)notch.style.display='none';
+    document.body.style.cssText='padding:0;margin:0;overflow:hidden;background:#0a1f13';
+    document.documentElement.style.setProperty('--vh',(window.innerHeight*0.01)+'px');
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',fixPhone);}else{fixPhone();}
+  window.addEventListener('resize',fixPhone);
+  window.addEventListener('orientationchange',function(){setTimeout(fixPhone,300);});
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Petri – Angelführer</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a1f13">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Petri">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+:root{
+  --bg-deep:#0a1f13;--bg-mid:#112619;--bg-card:#183322;--bg-elevated:#1e3f2a;--bg-input:#0d2118;
+  --accent:#4fa86e;--accent-water:#3a9898;--accent-amber:#d4854a;--accent-red:#c0503a;--accent-yellow:#c8a83a;
+  --text-pri:#dff0e4;--text-sec:#7aaa86;--text-muted:#4a7055;--border:#1f4530;
+}
+body{background:#080f0a;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:20px 10px 40px;font-family:'DM Sans',sans-serif;color:var(--text-pri);}
+.phone{width:390px;height:844px;background:var(--bg-deep);border-radius:44px;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 40px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.06),inset 0 1px 0 rgba(255,255,255,.08);}
+.notch{width:120px;height:34px;background:#080f0a;border-radius:0 0 20px 20px;margin:0 auto;flex-shrink:0;z-index:10;}
+.screen{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;}
+.screen.active{display:flex;}
+.screen-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;min-height:0;}
+.screen-scroll::-webkit-scrollbar{display:none;}
+.navbar{flex-shrink:0;background:var(--bg-mid);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding:10px 0 16px;padding-bottom:max(16px,env(safe-area-inset-bottom));z-index:100;}
+@media(max-width:768px){
+  body{padding:0;background:var(--bg-deep);display:block;}
+  .phone{width:100%;height:100dvh;height:calc(var(--vh,1vh)*100);border-radius:0;box-shadow:none;}
+  .notch{display:none;}
+  .map-wrap{margin:0 12px;height:44vw;min-height:200px;max-height:260px;}
+  .nav-item{min-height:44px;padding:6px 18px;}
+  .fish-pill{min-height:44px;}
+  .bait-item{min-height:48px;}
+  .map-fab{min-height:40px;min-width:44px;padding:10px 14px;}
+}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;opacity:.45;transition:opacity .2s;font-size:10px;color:var(--text-sec);padding:4px 16px;border-radius:12px;}
+.nav-item.active{opacity:1;color:var(--accent);}
+.display{font-family:'Fraunces',serif;font-weight:600;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:16px;}
+.card-sm{border-radius:14px;padding:12px 14px;}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;border-radius:20px;font-weight:500;white-space:nowrap;}
+.statusbar{display:flex;justify-content:space-between;align-items:center;padding:8px 24px 0;font-size:12px;color:var(--text-muted);flex-shrink:0;}
+.sec-head{display:flex;justify-content:space-between;align-items:center;padding:0 20px;margin-bottom:10px;}
+.sec-title{font-size:13px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;}
+.sec-link{font-size:12px;color:var(--accent);cursor:pointer;}
+.weather-item{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;}
+.bait-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);}
+.bait-item:last-child{border-bottom:none;}
+.bait-rank{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;}
+.lure-box{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.fish-pill{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 12px;border-radius:14px;cursor:pointer;border:1px solid transparent;transition:all .2s;font-size:11px;color:var(--text-sec);}
+.fish-pill.active{background:var(--bg-elevated);border-color:var(--accent);color:var(--accent);}
+.toggle-wrap{display:flex;background:var(--bg-input);border-radius:12px;padding:3px;gap:2px;}
+.toggle-opt{flex:1;text-align:center;padding:7px;border-radius:9px;font-size:12px;cursor:pointer;color:var(--text-muted);transition:all .2s;}
+.toggle-opt.active{background:var(--bg-elevated);color:var(--text-pri);}
+select{background:var(--bg-input);color:var(--text-pri);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:14px;font-family:'DM Sans',sans-serif;width:100%;outline:none;-webkit-appearance:none;}
+.score-wrap{position:relative;width:136px;height:136px;flex-shrink:0;}
+.score-ring{transform:rotate(-90deg);}
+.score-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+.detail-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg-deep);z-index:200;display:none;flex-direction:column;overflow-y:auto;} @media(max-width:768px){.detail-overlay{position:fixed;}}
+.detail-overlay.open{display:flex;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.fade-up{animation:fadeUp .3s ease both;}
+@keyframes dots{0%,33%{content:'.';}34%,66%{content:'..';}67%,100%{content:'...'}}
+.loading-dots::after{content:'.';animation:dots 1.2s steps(3,end) infinite;}
+.map-wrap{position:relative;height:265px;margin:0 20px;border-radius:18px;overflow:hidden;max-height:42vh;}
+#map-leaflet{height:100%;width:100%;}
+#map-3d{position:absolute;inset:0;display:none;}
+.leaflet-tile{filter:brightness(.5) saturate(.6) hue-rotate(95deg);}
+.leaflet-control-attribution{display:none!important;}
+.leaflet-control-zoom{bottom:10px!important;right:10px!important;left:auto!important;top:auto!important;}
+.leaflet-control-zoom a{background:var(--bg-card)!important;color:var(--text-pri)!important;border-color:var(--border)!important;width:28px!important;height:28px!important;line-height:28px!important;font-size:16px!important;}
+.map-fab{position:absolute;z-index:1000;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:7px 10px;cursor:pointer;color:var(--text-pri);font-size:12px;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px;transition:border-color .2s,color .2s;top:10px;right:10px;}
+.hotspot-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px;}
+.method-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(58,152,152,.12);color:var(--accent-water);font-weight:500;}
+
+/* ── GEWÄSSER MODAL ── */
+.water-modal-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);align-items:flex-end;justify-content:center;}
+.water-modal-overlay.open{display:flex;}
+.water-modal-sheet{background:var(--bg-mid);border-radius:24px 24px 0 0;padding:20px;width:100%;max-width:430px;border-top:1px solid var(--border);}
+.water-modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px;}
+.water-input{width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-pri);outline:none;transition:border-color .2s;}
+.water-input:focus{border-color:var(--accent);}
+.water-preset-item{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:var(--bg-input);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s;margin-bottom:6px;}
+.water-preset-item:hover{border-color:var(--accent);}
+.water-preset-item.selected{background:var(--bg-elevated);border-color:var(--accent);}
+</style>
+
+<script>
+function setVH(){document.documentElement.style.setProperty('--vh',window.innerHeight*0.01+'px');}
+setVH();
+window.addEventListener('resize',setVH);
+window.addEventListener('orientationchange',()=>setTimeout(setVH,200));
+function applyMobileMode(){
+  const isTouchDevice=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
+  const isNarrow=window.innerWidth<=768;
+  if(isTouchDevice||isNarrow){
+    const phone=document.querySelector('.phone');
+    const body=document.body;
+    const notch=document.querySelector('.notch');
+    if(phone){phone.style.width='100%';phone.style.minHeight='100vh';phone.style.borderRadius='0';phone.style.boxShadow='none';phone.style.overflow='visible';phone.style.height='auto';phone.style.position='static';}
+    if(notch)notch.style.display='none';
+    if(body){body.style.padding='0';body.style.background='var(--bg-deep)';body.style.display='block';}
+    document.querySelectorAll('.screen').forEach(s=>{s.style.minHeight='100vh';s.style.height='auto';s.style.paddingBottom='80px';});
+    const mapWrap=document.getElementById('map-wrap');
+    if(mapWrap)mapWrap.style.height=Math.min(280,window.innerHeight*0.38)+'px';
+  }
+}
+applyMobileMode();
+document.addEventListener('DOMContentLoaded',applyMobileMode);
+window.addEventListener('resize',applyMobileMode);
+</script>
+</head>
+<body>
+<div class="phone">
+<div class="notch"></div>
+
+<!-- ═══ HOME ═══ -->
+<div class="screen active" id="screen-home">
+  <div class="statusbar"><span id="sb-clock">--:--</span><span>●●●</span></div>
+  <div class="screen-scroll">
+  <div style="padding:14px 20px 6px;display:flex;justify-content:space-between;align-items:flex-end;">
+    <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;" id="greeting">Guten Tag</div><div class="display" style="font-size:24px;">Petri Heil</div></div>
+    <!-- ✅ FIX: Gewässer-Icon statt Settings -->
+    <div onclick="openWaterModal()" style="width:36px;height:36px;background:var(--bg-elevated);border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Gewässer wechseln">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    </div>
+  </div>
+  <div style="padding:4px 20px 12px;font-size:12px;color:var(--text-sec);display:flex;align-items:center;gap:5px;">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    <span id="loc-name">Neckar – Esslingen</span><span style="color:var(--text-muted);">· 16°C · Bewölkt</span>
+  </div>
+  <div style="display:flex;gap:6px;padding:0 20px 14px;overflow-x:auto;">
+    <div class="fish-pill active" onclick="selectFish(this,'Zander')"><svg width="28" height="16" viewBox="0 0 44 22"><path d="M2 11 Q8 4 18 5 Q30 4 36 11 Q30 18 18 17 Q8 18 2 11Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M36 11 L43 5 L43 17Z" fill="currentColor" opacity=".7"/><circle cx="9" cy="10" r="1.4" fill="currentColor"/></svg><span>Zander</span></div>
+    <div class="fish-pill" onclick="selectFish(this,'Hecht')"><svg width="28" height="16" viewBox="0 0 46 22"><path d="M2 11 Q6 4 16 5 Q32 4 40 11 Q32 18 16 17 Q6 18 2 11Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M40 11 L46 4 L46 18Z" fill="currentColor" opacity=".7"/><circle cx="7" cy="10" r="1.4" fill="currentColor"/><path d="M15 5 L15 17" stroke="currentColor" stroke-width=".7" opacity=".4"/></svg><span>Hecht</span></div>
+    <div class="fish-pill" onclick="selectFish(this,'Barsch')"><svg width="28" height="16" viewBox="0 0 40 24"><path d="M2 12 Q7 5 16 6 Q26 5 32 12 Q26 19 16 18 Q7 19 2 12Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M32 12 L38 7 L38 17Z" fill="currentColor" opacity=".7"/><circle cx="8" cy="11" r="1.4" fill="currentColor"/><path d="M14 6 Q16 10 14 18" stroke="currentColor" stroke-width=".7" opacity=".4" fill="none"/><path d="M18 6 Q20 10 18 18" stroke="currentColor" stroke-width=".7" opacity=".4" fill="none"/></svg><span>Barsch</span></div>
+    <div class="fish-pill" onclick="selectFish(this,'Forelle')"><svg width="28" height="16" viewBox="0 0 42 24"><path d="M2 12 Q8 5 17 6 Q27 5 33 12 Q27 19 17 18 Q8 19 2 12Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M33 12 L40 6 L38 12 L40 18Z" fill="currentColor" opacity=".7"/><circle cx="8" cy="11" r="1.4" fill="currentColor"/><circle cx="16" cy="8" r=".9" fill="currentColor" opacity=".5"/><circle cx="22" cy="10" r=".9" fill="currentColor" opacity=".5"/></svg><span>Forelle</span></div>
+  </div>
+  <div style="padding:0 20px 14px;">
+    <div class="card fade-up" style="padding:18px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="flex:1;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Fang-Score</div>
+          <div class="display" style="font-size:46px;line-height:1;" id="score-big">72<span style="font-size:22px;color:var(--text-sec);">%</span></div>
+          <div style="margin-top:7px;"><span class="chip" id="score-label" style="background:rgba(79,168,110,.15);color:#4fa86e;">Gut – lohnt sich</span></div>
+          <div style="margin-top:10px;font-size:12px;color:var(--text-sec);">Tiefe: <span id="score-depth" style="color:var(--text-pri);">3–8m</span></div>
+          <div style="font-size:12px;color:var(--text-sec);margin-top:2px;">Standort: <span id="score-struct" style="color:var(--text-pri);">Buhnen, Spundwände</span></div>
+        </div>
+        <div class="score-wrap">
+          <svg class="score-ring" width="136" height="136" viewBox="0 0 136 136">
+            <circle cx="68" cy="68" r="56" fill="none" stroke="var(--bg-elevated)" stroke-width="9"/>
+            <circle cx="68" cy="68" r="56" fill="none" stroke="var(--accent)" stroke-width="9" stroke-dasharray="352" id="score-arc" stroke-dashoffset="98" stroke-linecap="round" style="transition:stroke-dashoffset .6s,stroke .4s"/>
+          </svg>
+          <div class="score-center"><div style="font-size:10px;color:var(--text-muted);line-height:1.4;" id="score-date">--</div></div>
+        </div>
+      </div>
+      <div style="margin-top:14px;height:1px;background:var(--border);"></div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;" id="condition-chips">
+        <span class="chip" style="background:rgba(79,168,110,.08);color:var(--text-sec);" id="chip-temp">🌡 –°C</span>
+        <span class="chip" style="background:rgba(79,168,110,.08);color:var(--text-sec);" id="chip-pressure">📊 lädt…</span>
+        <span class="chip" style="background:rgba(79,168,110,.08);color:var(--text-sec);" id="chip-time">🌙 –</span>
+      </div>
+    </div>
+  </div>
+  <div class="sec-head"><span class="sec-title">Bedingungen</span></div>
+  <div style="padding:0 20px 14px;">
+    <div class="card card-sm">
+      <div style="display:flex;justify-content:space-between;" id="weather-strip">
+        <div class="weather-item"><div style="font-size:10px;color:var(--text-muted);">Luftdruck</div><div style="font-size:16px;font-weight:500;" id="w-pressure">–</div><div style="font-size:9px;" id="w-pressure-trend">lädt…</div></div>
+        <div style="width:1px;background:var(--border);"></div>
+        <div class="weather-item"><div style="font-size:10px;color:var(--text-muted);">Wind</div><div style="font-size:16px;font-weight:500;" id="w-wind">–</div><div style="font-size:9px;color:var(--text-sec);" id="w-wind-dir">km/h</div></div>
+        <div style="width:1px;background:var(--border);"></div>
+        <div class="weather-item"><div style="font-size:10px;color:var(--text-muted);">Wasser</div><div style="font-size:16px;font-weight:500;" id="w-water">–</div><div style="font-size:9px;color:var(--text-sec);" id="w-water-sub">°C</div></div>
+        <div style="width:1px;background:var(--border);"></div>
+        <div class="weather-item"><div style="font-size:10px;color:var(--text-muted);">Bewölkung</div><div style="font-size:16px;font-weight:500;" id="w-cloud">–</div><div style="font-size:9px;color:var(--text-sec);">%</div></div>
+      </div>
+      <!-- Wassertemperatur-Verlauf 7 Tage -->
+      <div id="w-temp-history-wrap" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Wassertemp. 7 Tage</div>
+          <div style="font-size:11px;font-weight:600;" id="w-temp-trend-badge">–</div>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:3px;height:36px;" id="w-temp-bars"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;" id="w-temp-labels"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text-muted);" id="w-station">Keine Pegeldaten</div>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <div id="w-status" style="width:6px;height:6px;border-radius:50%;background:var(--text-muted);"></div>
+          <div style="font-size:10px;color:var(--text-muted);" id="w-updated">–</div>
+          <div onclick="debugRefreshWeather()" style="cursor:pointer;font-size:10px;color:var(--accent);padding:2px 6px;border:1px solid rgba(79,168,110,.3);border-radius:6px;">↻</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sec-head"><span class="sec-title">Top Köder heute</span><span class="sec-link" onclick="goTo('baits')">Alle →</span></div>
+  <div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:7px;">
+    <div class="card card-sm" style="cursor:pointer;" onclick="goTo('baits')">
+      <div style="display:flex;align-items:center;gap:11px;">
+        <div class="lure-box" style="background:rgba(79,168,110,.1);" id="home-lure-1"></div>
+        <div style="flex:1;"><div style="font-weight:500;font-size:13px;" id="top-bait-1">Großer Gummifisch / Shad</div><div style="font-size:11px;color:var(--text-muted);" id="top-bait-1-detail">12–20cm · Jigkopf 21–40g · Jigging</div></div>
+        <span class="chip" style="background:rgba(79,168,110,.12);color:var(--accent);font-size:10px;">#1</span>
+      </div>
+    </div>
+    <div class="card card-sm" style="cursor:pointer;" onclick="goTo('baits')">
+      <div style="display:flex;align-items:center;gap:11px;">
+        <div class="lure-box" style="background:rgba(200,168,58,.1);" id="home-lure-2"></div>
+        <div style="flex:1;"><div style="font-weight:500;font-size:13px;" id="top-bait-2">Großer Wobbler</div><div style="font-size:11px;color:var(--text-muted);" id="top-bait-2-detail">11–17cm · Tiefläufer · Stop-and-Go</div></div>
+        <span class="chip" style="background:rgba(200,168,58,.12);color:var(--accent-yellow);font-size:10px;">#2</span>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- ═══ KÖDER ═══ -->
+<div class="screen" id="screen-baits">
+  <div class="statusbar"><span class="sb-clock-ref">--:--</span><span>●●●</span></div>
+  <div class="screen-scroll">
+  <div style="padding:10px 20px 10px;display:flex;align-items:center;gap:10px;">
+    <div class="display" style="font-size:21px;flex:1;" id="bait-screen-title">Köder – Zander</div>
+    <div class="toggle-wrap">
+      <div id="turbid-klar" class="toggle-opt active" onclick="setTurbid('klar')">Klar</div>
+      <div id="turbid-trueb" class="toggle-opt" onclick="setTurbid('trueb')">Trüb</div>
+    </div>
+  </div>
+  <div style="padding:0 20px 10px;"><div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;">
+    <div class="chip season-chip" data-s="Herbst" onclick="selectSeason('Herbst')" style="cursor:pointer;">Herbst</div>
+    <div class="chip season-chip" data-s="Winter" onclick="selectSeason('Winter')" style="cursor:pointer;">Winter</div>
+    <div class="chip season-chip" data-s="Frühjahr" onclick="selectSeason('Frühjahr')" style="cursor:pointer;">Frühjahr</div>
+    <div class="chip season-chip" data-s="Sommer" onclick="selectSeason('Sommer')" style="cursor:pointer;">Sommer</div>
+  </div></div>
+  <div style="padding:0 20px 10px;">
+    <div class="card" style="padding:13px 15px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-size:13px;font-weight:500;" id="bait-season-label">Herbst – Hauptsaison</div>
+        <span class="chip" id="bait-score-badge" style="background:rgba(79,168,110,.12);color:var(--accent);font-size:10px;">🟢 Top-Zeit</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-sec);line-height:1.5;" id="bait-season-note"></div>
+      <div style="display:flex;gap:14px;margin-top:8px;">
+        <div style="font-size:11px;color:var(--text-muted);">Tiefe: <span style="color:var(--text-pri);" id="bait-depth">3–8m</span></div>
+        <div style="font-size:11px;color:var(--text-muted);">Struktur: <span style="color:var(--text-pri);" id="bait-struct"></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="sec-head"><span class="sec-title" id="static-baits-label">Saisonale Referenz</span></div>
+  <div style="padding:0 20px 16px;"><div class="card" id="bait-list-container" style="padding:4px 12px;"></div></div>
+  <!-- KI Köderempfehlung -->
+  <div style="padding:0 20px 8px;">
+    <button id="ki-btn" onclick="getKIRecommendation()" style="width:100%;padding:13px;background:linear-gradient(135deg,#2ab070,#3dd68c);border:none;border-radius:14px;color:#040a06;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      🎯 Empfehlung berechnen
+    </button>
+  </div>
+  <div id="ki-loading" style="display:none;padding:0 20px 8px;">
+    <div style="height:3px;background:var(--border);border-radius:2px;overflow:hidden;"><div style="height:100%;background:var(--accent);animation:loadAnim 1.5s ease-in-out infinite;"></div></div>
+    <div style="text-align:center;font-size:12px;color:var(--text-muted);margin-top:8px;">Berechne Empfehlung…</div>
+  </div>
+  <div id="ki-error" style="display:none;margin:0 20px 8px;padding:12px;background:rgba(192,80,58,.1);border:1px solid rgba(192,80,58,.2);border-radius:12px;font-size:12px;color:var(--text-sec);"></div>
+  <div id="ki-results" style="display:none;">
+    <div class="sec-head" style="margin-top:4px;"><span class="sec-title">Wetter-Empfehlung</span></div>
+    <div style="padding:0 20px 16px;" id="ki-bait-list"></div>
+  </div>
+  </div>
+  <div class="detail-overlay" id="detail-overlay">
+    <div style="padding:12px 20px 0;display:flex;align-items:center;gap:10px;">
+      <div onclick="closeDetail()" style="width:34px;height:34px;background:var(--bg-elevated);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-pri)" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></div>
+      <div class="display" style="font-size:17px;" id="detail-title"></div>
+    </div>
+    <div style="padding:14px 20px;flex:1;overflow-y:auto;">
+      <div class="card" style="margin-bottom:10px;display:flex;align-items:center;gap:12px;">
+        <div class="lure-box" style="width:52px;height:52px;border-radius:13px;" id="detail-lure-wrap"></div>
+        <div><div style="font-size:14px;font-weight:500;" id="detail-name"></div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;" id="detail-type"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px;">
+        <div class="card card-sm"><div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;">Größe</div><div style="font-size:13px;font-weight:500;" id="detail-size"></div></div>
+        <div class="card card-sm"><div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;">Montage</div><div style="font-size:13px;font-weight:500;" id="detail-rig"></div></div>
+        <div class="card card-sm"><div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;">Führung</div><div style="font-size:13px;font-weight:500;" id="detail-speed"></div></div>
+        <div class="card card-sm"><div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;">Score-Bonus</div><div style="font-size:13px;font-weight:500;color:var(--accent);" id="detail-boost"></div></div>
+      </div>
+      <div class="card" style="margin-bottom:10px;background:rgba(58,152,152,.07);border-color:rgba(58,152,152,.25);"><div style="font-size:11px;color:var(--accent-water);margin-bottom:4px;">▶ Präsentationsmethode</div><div style="font-size:13px;font-weight:500;color:var(--text-pri);" id="detail-method"></div></div>
+      <div class="card" style="margin-bottom:10px;"><div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Führungsstil</div><div style="font-size:13px;line-height:1.6;" id="detail-style"></div></div>
+      <div class="card" style="margin-bottom:10px;"><div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Farbe nach Trübung</div>
+        <div style="font-size:13px;display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:var(--text-sec);">Klar</span><span id="detail-color-klar"></span></div>
+        <div style="height:1px;background:var(--border);margin-bottom:6px;"></div>
+        <div style="font-size:13px;display:flex;justify-content:space-between;"><span style="color:var(--text-sec);">Trüb</span><span id="detail-color-trueb"></span></div>
+      </div>
+      <div class="card" style="background:rgba(79,168,110,.07);border-color:rgba(79,168,110,.2);"><div style="font-size:11px;color:var(--accent);margin-bottom:4px;">Tipp</div><div style="font-size:13px;color:var(--text-sec);line-height:1.5;" id="detail-note"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ KARTE ═══ -->
+<div class="screen" id="screen-map">
+  <div class="statusbar"><span class="sb-clock-ref">--:--</span><span>●●●</span></div>
+  <div class="screen-scroll">
+  <div style="padding:10px 20px 8px;display:flex;justify-content:space-between;align-items:center;">
+    <div class="display" style="font-size:21px;">Gewässerkarte</div>
+    <div style="display:flex;gap:5px;">
+      <div id="btn-2d" onclick="setMapMode('2d')" class="chip" style="background:rgba(79,168,110,.15);color:var(--accent);border:1px solid rgba(79,168,110,.3);cursor:pointer;">2D</div>
+      <div id="btn-3d" onclick="setMapMode('3d')" class="chip" style="background:var(--bg-elevated);color:var(--text-sec);border:1px solid var(--border);cursor:pointer;">3D</div>
+    </div>
+  </div>
+  <div class="map-wrap" id="map-wrap">
+    <div id="map-leaflet"></div>
+    <canvas id="map-3d"></canvas>
+    <button class="map-fab" id="btn-gps" onclick="doGPS()" style="top:10px;left:10px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg> GPS
+    </button>
+    <div id="gps-msg" style="display:none;position:absolute;bottom:8px;left:8px;z-index:999;font-size:11px;color:var(--text-sec);background:rgba(8,15,10,.85);padding:4px 8px;border-radius:8px;"></div>
+  </div>
+  <div style="padding:7px 20px 8px;font-size:11px;color:var(--text-sec);display:flex;align-items:center;gap:5px;">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    <span id="map-loc-label">Neckar · 48.7440°N 9.3160°E · Klick auf Karte = Standort setzen</span>
+  </div>
+  <div class="sec-head" style="margin-bottom:4px;">
+    <span class="sec-title">Hotspots aus Angelberichten</span>
+    <span class="sec-link" id="hs-btn" onclick="loadHotspots()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Suchen
+    </span>
+  </div>
+  <div style="padding:0 20px 4px;font-size:10px;color:var(--text-muted);">Quellen: anglerboard.de · raubfischangeln.de · anglerforum.net · petri-heil.de</div>
+  <div style="padding:6px 20px 16px;" id="hs-results">
+    <div style="padding:14px;text-align:center;color:var(--text-muted);font-size:12px;">Auf „Suchen" tippen für gewässerspezifische Hotspots aus Angelberichten.</div>
+  </div>
+  </div>
+</div>
+
+<!-- ═══ EINSTELLUNGEN ═══ -->
+<div class="screen" id="screen-settings">
+  <div class="statusbar"><span class="sb-clock-ref">--:--</span><span>●●●</span></div>
+  <div class="screen-scroll">
+  <div style="padding:10px 20px 16px;"><div class="display" style="font-size:21px;">Einstellungen</div></div>
+  <div class="sec-head"><span class="sec-title">Gewässer</span></div>
+  <div style="padding:0 20px 14px;">
+    <div class="card" style="padding:13px 15px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:7px;">Aktuelles Gewässer</div>
+      <select id="gewaesser-select" onchange="updateLocation()">
+        <option value="neckar">Neckar – Esslingen</option><option value="rhein">Rhein – Mannheim</option>
+        <option value="donau">Donau – Ulm</option><option value="bodensee">Bodensee – Konstanz</option>
+        <option value="main">Main – Frankfurt</option>
+      </select>
+      <div style="margin-top:9px;display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-sec);">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span id="settings-gps">48.7440°N 9.3160°E</span>
+      </div>
+    </div>
+  </div>
+  <div class="sec-head"><span class="sec-title">Zielarten</span></div>
+  <div style="padding:0 20px 14px;">
+    <div class="card" style="padding:13px 15px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);">
+        <div><div style="font-size:13px;font-weight:500;">Zander</div><div style="font-size:10px;color:var(--text-muted);">Schonzeit: Apr–Jun</div></div>
+        <div onclick="toggleSw(this)" style="width:38px;height:21px;background:var(--accent);border-radius:11px;position:relative;cursor:pointer;flex-shrink:0;"><div style="width:15px;height:15px;background:white;border-radius:50%;position:absolute;top:3px;right:3px;"></div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+        <div><div style="font-size:13px;font-weight:500;">Hecht</div><div style="font-size:10px;color:var(--text-muted);">Schonzeit: Feb–Apr</div></div>
+        <div onclick="toggleSw(this)" style="width:38px;height:21px;background:var(--accent);border-radius:11px;position:relative;cursor:pointer;flex-shrink:0;"><div style="width:15px;height:15px;background:white;border-radius:50%;position:absolute;top:3px;right:3px;"></div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+        <div><div style="font-size:13px;font-weight:500;">Barsch</div><div style="font-size:10px;color:var(--text-muted);">Schonzeit: März–Apr</div></div>
+        <div onclick="toggleSw(this)" style="width:38px;height:21px;background:var(--accent);border-radius:11px;position:relative;cursor:pointer;flex-shrink:0;"><div style="width:15px;height:15px;background:white;border-radius:50%;position:absolute;top:3px;right:3px;"></div></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0 0;">
+        <div><div style="font-size:13px;font-weight:500;">Forelle / Äsche</div><div style="font-size:10px;color:var(--text-muted);">Schonzeit: Okt–Jan / März–Mai</div></div>
+        <div onclick="toggleSw(this)" style="width:38px;height:21px;background:var(--text-muted);border-radius:11px;position:relative;cursor:pointer;flex-shrink:0;"><div style="width:15px;height:15px;background:white;border-radius:50%;position:absolute;top:3px;left:3px;"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="sec-head"><span class="sec-title">Benachrichtigungen</span></div>
+  <div style="padding:0 20px 16px;">
+    <div class="card" style="padding:13px 15px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div><div style="font-size:13px;font-weight:500;">Score über 80%</div><div style="font-size:10px;color:var(--text-muted);">Push-Benachrichtigung</div></div>
+        <div onclick="toggleSw(this)" style="width:38px;height:21px;background:var(--accent);border-radius:11px;position:relative;cursor:pointer;flex-shrink:0;"><div style="width:15px;height:15px;background:white;border-radius:50%;position:absolute;top:3px;right:3px;"></div></div>
+      </div>
+      <div style="height:1px;background:var(--border);margin-bottom:10px;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div><div style="font-size:13px;font-weight:500;">Schonzeit-Erinnerung</div><div style="font-size:10px;color:var(--text-muted);">1 Woche vor Beginn</div></div>
+        <div onclick="toggleSw(this)" style="width:38px;height:21px;background:var(--accent);border-radius:11px;position:relative;cursor:pointer;flex-shrink:0;"><div style="width:15px;height:15px;background:white;border-radius:50%;position:absolute;top:3px;right:3px;"></div></div>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center;font-size:11px;color:var(--text-muted);padding-bottom:16px;">Petri App v1.2 · Datenbank v1.0.0</div>
+  </div>
+</div>
+
+<!-- ═══ GEWÄSSER MODAL ═══ -->
+<div id="water-modal" class="water-modal-overlay" onclick="if(event.target===this)closeWaterModal()">
+  <div class="water-modal-sheet">
+    <div class="water-modal-handle"></div>
+    <div class="display" style="font-size:19px;margin-bottom:14px;">Gewässer wählen</div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Eigenes Gewässer eingeben</div>
+      <div style="display:flex;gap:8px;">
+        <input id="custom-water-input" class="water-input" type="text" placeholder="z.B. Kocher – Gaildorf" onkeydown="if(event.key==='Enter')applyCustomWater()"/>
+        <button onclick="applyCustomWater()" style="background:var(--accent);border:none;border-radius:12px;padding:0 18px;color:#040a06;font-weight:700;font-size:16px;cursor:pointer;">✓</button>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Gespeicherte Gewässer</div>
+    <div id="water-preset-list"></div>
+    <button onclick="closeWaterModal()" style="width:100%;padding:13px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:14px;color:var(--text-sec);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;margin-top:4px;">Abbrechen</button>
+  </div>
+</div>
+
+<!-- ═══ TAGEBUCH ═══ -->
+<div class="screen" id="screen-diary">
+  <div class="statusbar"><span class="sb-clock-ref">--:--</span><span>●●●</span></div>
+  <div class="screen-scroll">
+
+  <!-- Header + Add Button -->
+  <div style="padding:10px 20px 12px;display:flex;justify-content:space-between;align-items:center;">
+    <div class="display" style="font-size:21px;">Fangtagebuch</div>
+    <button onclick="openAddCatch()" style="background:var(--accent);border:none;border-radius:12px;padding:8px 14px;color:#040a06;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Fang eintragen
+    </button>
+  </div>
+
+  <!-- Stats Row -->
+  <div style="display:flex;gap:8px;padding:0 20px 14px;" id="diary-stats-row">
+    <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:12px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;font-family:'Fraunces',serif;color:var(--accent);" id="stat-total">0</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Gesamt</div>
+    </div>
+    <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:12px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;font-family:'Fraunces',serif;color:var(--accent-yellow);" id="stat-biggest">–</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Größter (cm)</div>
+    </div>
+    <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:12px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;font-family:'Fraunces',serif;color:var(--accent-amber);" id="stat-this-month">0</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Diesen Monat</div>
+    </div>
+  </div>
+
+  <!-- Filter Chips -->
+  <div style="display:flex;gap:7px;padding:0 20px 12px;overflow-x:auto;">
+    <div class="chip diary-filter active" data-filter="all" onclick="filterDiary('all')" style="cursor:pointer;background:rgba(79,168,110,.12);color:var(--accent);border:1px solid rgba(79,168,110,.25);">Alle</div>
+    <div class="chip diary-filter" data-filter="Zander" onclick="filterDiary('Zander')" style="cursor:pointer;background:var(--bg-input);color:var(--text-muted);border:1px solid transparent;">Zander</div>
+    <div class="chip diary-filter" data-filter="Hecht" onclick="filterDiary('Hecht')" style="cursor:pointer;background:var(--bg-input);color:var(--text-muted);border:1px solid transparent;">Hecht</div>
+    <div class="chip diary-filter" data-filter="Barsch" onclick="filterDiary('Barsch')" style="cursor:pointer;background:var(--bg-input);color:var(--text-muted);border:1px solid transparent;">Barsch</div>
+    <div class="chip diary-filter" data-filter="Forelle" onclick="filterDiary('Forelle')" style="cursor:pointer;background:var(--bg-input);color:var(--text-muted);border:1px solid transparent;">Forelle</div>
+    <div class="chip diary-filter" data-filter="Andere" onclick="filterDiary('Andere')" style="cursor:pointer;background:var(--bg-input);color:var(--text-muted);border:1px solid transparent;">Andere</div>
+  </div>
+
+  <!-- Entries List -->
+  <div id="diary-list" style="padding:0 20px 16px;">
+    <div id="diary-empty" style="text-align:center;padding:50px 20px;color:var(--text-muted);">
+      <div style="font-size:48px;margin-bottom:12px;opacity:.4;">🎣</div>
+      <div style="font-size:14px;line-height:1.6;">Noch keine Fänge eingetragen.<br>Tippe auf „Fang eintragen"!</div>
+    </div>
+  </div>
+
+  </div>
+</div>
+
+<!-- ═══ FANG HINZUFÜGEN OVERLAY ═══ -->
+<div id="add-catch-overlay" style="display:none;position:fixed;inset:0;z-index:300;background:var(--bg-deep);flex-direction:column;overflow-y:auto;">
+  <div style="padding:12px 20px 0;display:flex;align-items:center;gap:10px;flex-shrink:0;">
+    <div onclick="closeAddCatch()" style="width:34px;height:34px;background:var(--bg-elevated);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-pri)" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </div>
+    <div class="display" style="font-size:17px;" id="add-catch-title">Fang eintragen</div>
+  </div>
+
+  <div style="padding:16px 20px;flex:1;">
+
+    <!-- Foto -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Foto</div>
+      <div id="photo-preview" onclick="triggerCamera()" style="width:100%;height:180px;background:var(--bg-card);border:2px dashed var(--border);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">Foto aufnehmen oder wählen</div>
+      </div>
+      <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handlePhoto(this)"/>
+    </div>
+
+    <!-- Fischart -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Fischart</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="fish-selector">
+        <div class="fish-select-btn active" data-fish="Zander" onclick="selectCatchFish(this,'Zander')" style="padding:8px 14px;border-radius:20px;font-size:13px;cursor:pointer;background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);">Zander</div>
+        <div class="fish-select-btn" data-fish="Hecht" onclick="selectCatchFish(this,'Hecht')" style="padding:8px 14px;border-radius:20px;font-size:13px;cursor:pointer;background:var(--bg-input);color:var(--text-muted);border:1px solid transparent;">Hecht</div>
+        <div class="fish-select-btn" data-fish="Barsch" onclick="selectCatchFish(this,'Barsch')" style="padding:8px 14px;border-radius:20px;font-size:13px;cursor:pointer;background:var(--bg-input);color:var(--text-muted);border:1px solid transparent;">Barsch</div>
+        <div class="fish-select-btn" data-fish="Forelle" onclick="selectCatchFish(this,'Forelle')" style="padding:8px 14px;border-radius:20px;font-size:13px;cursor:pointer;background:var(--bg-input);color:var(--text-muted);border:1px solid transparent;">Forelle</div>
+        <div class="fish-select-btn" data-fish="Andere" onclick="selectCatchFish(this,'Andere')" style="padding:8px 14px;border-radius:20px;font-size:13px;cursor:pointer;background:var(--bg-input);color:var(--text-muted);border:1px solid transparent;">Andere</div>
+      </div>
+    </div>
+
+    <!-- Maße -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Länge (cm)</div>
+        <input id="catch-length" type="number" min="1" max="200" placeholder="z.B. 52" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--text-pri);outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Gewicht (g)</div>
+        <input id="catch-weight" type="number" min="1" max="30000" placeholder="z.B. 1200" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--text-pri);outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      </div>
+    </div>
+
+    <!-- Köder -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Verwendeter Köder</div>
+      <input id="catch-bait" type="text" placeholder="z.B. Action Shad 15cm, chartreuse" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-pri);outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+    </div>
+
+    <!-- Gewässer + Zeit (auto) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Gewässer</div>
+        <input id="catch-water" type="text" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text-pri);outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Datum & Zeit</div>
+        <input id="catch-datetime" type="datetime-local" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text-pri);outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      </div>
+    </div>
+
+    <!-- Wetter (auto) -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:14px;" id="catch-weather-auto">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Aktuelle Bedingungen (automatisch)</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;" id="catch-weather-display"></div>
+    </div>
+
+    <!-- Notizen -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Notizen</div>
+      <textarea id="catch-notes" rows="3" placeholder="Wo genau, Tiefe, Besonderheiten..." style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-pri);outline:none;resize:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+    </div>
+
+    <!-- Save Button -->
+    <button onclick="saveCatch()" style="width:100%;padding:15px;background:linear-gradient(135deg,#2ab070,#3dd68c);border:none;border-radius:14px;color:#040a06;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:20px;">
+      🎣 Fang speichern
+    </button>
+
+  </div>
+</div>
+
+<!-- ═══ FANG DETAIL OVERLAY ═══ -->
+<div id="catch-detail-overlay" style="display:none;position:fixed;inset:0;z-index:301;background:var(--bg-deep);flex-direction:column;overflow-y:auto;">
+  <div style="padding:12px 20px 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div onclick="closeCatchDetail()" style="width:34px;height:34px;background:var(--bg-elevated);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-pri)" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </div>
+      <div class="display" style="font-size:17px;" id="detail-catch-title">Fang Details</div>
+    </div>
+    <div onclick="deleteCatch()" style="width:34px;height:34px;background:rgba(192,80,58,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c0503a" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    </div>
+  </div>
+  <div style="padding:16px 20px;" id="catch-detail-content"></div>
+</div>
+
+<div class="navbar" id="main-navbar">
+  <div class="nav-item active" id="nav-home" onclick="goTo('home')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></div>
+  <div class="nav-item" id="nav-baits" onclick="goTo('baits')"><svg width="22" height="22" viewBox="0 0 44 22"><path d="M2 11 Q8 4 18 5 Q30 4 36 11 Q30 18 18 17 Q8 18 2 11Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M36 11 L43 5 L43 17Z" fill="currentColor"/><circle cx="9" cy="10" r="1.5" fill="currentColor"/></svg><span>Köder</span></div>
+  <div class="nav-item" id="nav-map" onclick="goTo('map')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg><span>Karte</span></div>
+  <div class="nav-item" id="nav-diary" onclick="goTo('diary')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    <span>Tagebuch</span>
+  </div>
+  <div class="nav-item" id="nav-settings" onclick="goTo('settings')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Einstellungen</span></div>
+</div>
+</div><!-- /phone -->
+
+<script>
+const IC={shad:`<svg viewBox="0 0 68 28" width="42" height="18"><defs><linearGradient id="sg1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#3d9660" stop-opacity=".5"/><stop offset="100%" stop-color="#7ec86a"/></linearGradient></defs><path d="M6 14 Q14 5 28 6 Q44 5 56 14 Q44 23 28 22 Q14 23 6 14Z" fill="url(#sg1)" stroke="#4fa86e" stroke-width="1.2"/><path d="M56 14 L66 7 L63 14 L66 21Z" fill="#4fa86e" opacity=".65"/><ellipse cx="17" cy="12" rx="3.5" ry="4.5" fill="#8fd46a" opacity=".4"/><circle cx="17" cy="11" r="2" fill="#061a10"/><circle cx="17.8" cy="10.2" r=".6" fill="white" opacity=".7"/><path d="M28 6 Q30 14 28 22" stroke="#4fa86e" stroke-width=".9" fill="none" opacity=".5"/><path d="M36 6 Q38 14 36 22" stroke="#4fa86e" stroke-width=".9" fill="none" opacity=".35"/><path d="M44 7 Q46 14 44 21" stroke="#4fa86e" stroke-width=".9" fill="none" opacity=".25"/></svg>`,shadLow:`<svg viewBox="0 0 68 28" width="42" height="18"><defs><linearGradient id="sl1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#2d7650" stop-opacity=".5"/><stop offset="100%" stop-color="#5ea85a"/></linearGradient></defs><path d="M6 14 Q14 5 28 7 Q44 7 56 14 Q44 21 28 21 Q14 23 6 14Z" fill="url(#sl1)" stroke="#4fa86e" stroke-width="1.2"/><path d="M56 14 L66 11 L64 14 L66 17Z" fill="#4fa86e" opacity=".5"/><ellipse cx="17" cy="12" rx="3.5" ry="4.5" fill="#7ab86a" opacity=".35"/><circle cx="17" cy="11" r="2" fill="#061a10"/><circle cx="17.8" cy="10.2" r=".6" fill="white" opacity=".7"/><path d="M28 7 Q29 14 28 21" stroke="#4fa86e" stroke-width=".7" fill="none" opacity=".4"/><path d="M38 7 Q39 14 38 21" stroke="#4fa86e" stroke-width=".7" fill="none" opacity=".25"/></svg>`,wobbler:`<svg viewBox="0 0 74 34" width="44" height="21"><defs><linearGradient id="wg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e8c85a"/><stop offset="100%" stop-color="#a07820" stop-opacity=".7"/></linearGradient></defs><path d="M8 17 Q14 8 26 9 Q42 8 54 17 Q42 26 26 25 Q14 26 8 17Z" fill="url(#wg1)" stroke="#c8a83a" stroke-width="1.2"/><path d="M54 17 L64 10 L62 17 L64 24Z" fill="#c8a83a" opacity=".7"/><ellipse cx="18" cy="15" rx="3.5" ry="4" fill="rgba(255,220,80,.4)"/><circle cx="18" cy="14" r="2" fill="#061a10"/><circle cx="18.8" cy="13.2" r=".6" fill="white" opacity=".7"/><path d="M8 17 Q4 13 2 17" stroke="#c8a83a" stroke-width="1.5" fill="none"/><line x1="24" y1="25" x2="24" y2="31" stroke="#c8a83a" stroke-width="1.5"/><path d="M21 31 Q24 33.5 27 31" fill="none" stroke="#c8a83a" stroke-width="1.5"/><line x1="38" y1="25" x2="38" y2="31" stroke="#c8a83a" stroke-width="1.5"/><path d="M35 31 Q38 33.5 41 31" fill="none" stroke="#c8a83a" stroke-width="1.5"/></svg>`,blade:`<svg viewBox="0 0 44 40" width="26" height="25"><path d="M10 6 Q24 2 36 20 Q24 38 10 34 Q18 20 10 6Z" fill="#d4854a" opacity=".55" stroke="#d4854a" stroke-width="1.2"/><path d="M10 6 L10 2 Q12 0 14 2 L14 6" stroke="#888" stroke-width="1" fill="#666"/><line x1="22" y1="28" x2="22" y2="37" stroke="#d4854a" stroke-width="1.5"/><path d="M19 37 Q22 39.5 25 37" fill="none" stroke="#d4854a" stroke-width="1.5"/></svg>`,livebait:`<svg viewBox="0 0 62 26" width="38" height="16"><path d="M4 13 Q10 5 20 6 Q32 5 44 13 Q32 21 20 20 Q10 21 4 13Z" fill="rgba(58,152,152,.15)" stroke="var(--accent-water)" stroke-width="1.4" stroke-dasharray="3,2"/><path d="M44 13 L54 7 L52 13 L54 19Z" fill="var(--accent-water)" opacity=".55"/><circle cx="12" cy="12" r="1.6" fill="var(--accent-water)"/><line x1="4" y1="13" x2="4" y2="2" stroke="#777" stroke-width="1"/><circle cx="4" cy="2" r="2" fill="none" stroke="#777" stroke-width="1"/><path d="M1 7 L4 5 L4 9Z" fill="#777" opacity=".7"/></svg>`,spinner:`<svg viewBox="0 0 52 34" width="32" height="21"><ellipse cx="20" cy="14" rx="9" ry="13" fill="#c8a83a" opacity=".45" stroke="#c8a83a" stroke-width="1" transform="rotate(-15 20 14)"/><line x1="5" y1="28" x2="20" y2="14" stroke="#999" stroke-width="1"/><circle cx="4" cy="28" r="1.5" fill="#999"/><line x1="20" y1="14" x2="40" y2="16" stroke="#999" stroke-width="1.2"/><circle cx="40" cy="16" r="2" fill="#888"/><path d="M38 20 L42 22.5 L40 17Z" fill="#c8a83a" stroke="#c8a83a" stroke-width=".8"/><circle cx="20" cy="14" r="2.5" fill="#c8a83a"/></svg>`,dropshot:`<svg viewBox="0 0 34 52" width="21" height="33"><line x1="17" y1="2" x2="17" y2="46" stroke="#888" stroke-width="1.2"/><path d="M11 14 Q17 10 23 14 Q23 22 17 22 Q11 22 11 14Z" fill="#4fa86e" opacity=".55"/><path d="M17 10 Q14 8 17 6 Q20 8 17 10Z" fill="none" stroke="#4fa86e" stroke-width="1.2"/><rect x="13" y="46" width="8" height="5" rx="2.5" fill="#888" opacity=".6"/></svg>`,jerkbait:`<svg viewBox="0 0 78 32" width="46" height="20"><defs><linearGradient id="jg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e8904a"/><stop offset="100%" stop-color="#8a3a0a" stop-opacity=".6"/></linearGradient></defs><path d="M4 16 Q8 7 22 8 Q42 6 58 16 Q42 26 22 24 Q8 25 4 16Z" fill="url(#jg1)" stroke="#c8703a" stroke-width="1.2"/><path d="M58 16 L70 9 L68 16 L70 23Z" fill="#c8703a" opacity=".7"/><ellipse cx="14" cy="14" rx="3" ry="3.5" fill="rgba(240,160,80,.4)"/><circle cx="14" cy="13" r="1.8" fill="#061a10"/><circle cx="14.7" cy="12.3" r=".6" fill="white" opacity=".7"/><line x1="28" y1="24" x2="28" y2="30" stroke="#c8703a" stroke-width="1.5"/><path d="M25 30 Q28 32 31 30" fill="none" stroke="#c8703a" stroke-width="1.5"/><line x1="44" y1="24" x2="44" y2="30" stroke="#c8703a" stroke-width="1.5"/><path d="M41 30 Q44 32 47 30" fill="none" stroke="#c8703a" stroke-width="1.5"/></svg>`,dryfly:`<svg viewBox="0 0 50 38" width="30" height="24"><path d="M14 20 Q6 12 10 6 Q16 2 20 8 Q24 2 30 6 Q38 10 36 20" stroke="rgba(122,170,134,.5)" stroke-width="1" fill="rgba(143,212,106,.1)"/><path d="M14 20 Q18 24 24 26 Q30 24 36 20" stroke="rgba(122,170,134,.4)" stroke-width=".8" fill="none"/><path d="M24 8 Q22 16 20 24 Q22 30 24 32" stroke="#8fd46a" stroke-width="1.6" fill="none"/><path d="M24 32 L22 37" stroke="#8fd46a" stroke-width="1.2"/><path d="M20 37 L26 37" stroke="#8fd46a" stroke-width="1.5"/><circle cx="22" cy="8" r="1.5" fill="#d4854a" opacity=".8"/></svg>`,nymph:`<svg viewBox="0 0 42 38" width="25" height="24"><circle cx="10" cy="11" r="5.5" fill="#d4854a" opacity=".85"/><circle cx="11.5" cy="9.5" r="1.5" fill="rgba(255,200,80,.5)"/><path d="M15 13 Q22 18 26 28" stroke="#8fd46a" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M18 15 Q15 20 13 24" stroke="rgba(122,170,134,.5)" stroke-width=".9" fill="none"/><path d="M20 17 Q17 22 15 26" stroke="rgba(122,170,134,.5)" stroke-width=".9" fill="none"/><path d="M26 28 L24 34" stroke="#8fd46a" stroke-width="1.2"/><path d="M22 34 L28 34" stroke="#8fd46a" stroke-width="1.6"/></svg>`,popper:`<svg viewBox="0 0 64 28" width="38" height="18"><path d="M10 14 Q10 6 18 6 Q30 5 46 14 Q30 23 18 22 Q10 22 10 14Z" fill="#4fa86e" opacity=".55" stroke="#4fa86e" stroke-width="1.2"/><path d="M46 14 L58 8 L56 14 L58 20Z" fill="#4fa86e" opacity=".5"/><path d="M10 14 Q5 9 3 13 M10 14 Q4 14 3 17" stroke="#8fd46a" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="20" cy="12" r="1.8" fill="#061a10"/></svg>`};
+
+const SEASON_BAITS={Zander:{Herbst:{sl:'Herbst – Hauptsaison',sn:'Bestes Zanderhalbjahr! Fettfrass vor Winter. Action Shad im Jiggen optimal.',dep:'3–8m',str:'Buhnen, Spundwände, Abbruchkanten',score:78,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'shad',ib:'rgba(79,168,110,.1)',n:'Action Shad (Paddletail)',ty:'Softbait – aktive Fische',de:'12–20cm · Jigkopf 21–40g',pm:'Jiggen: Rucken–Pause–Bodenkontakt',ri:'Jigkopf 21–40g',si:'12–20 cm',sp:'Mittel – ruckend',bo:'+25%',st:'Rucken, kurze Pause, Boden antippen. Schaufelschwanz erzeugt starke Druckwellen.',ck:'Naturfarben, Bleak, Silber-Blau',ct:'Chartreuse, UV-Orange, Gelb-Schwarz',no:'Herbst = beste Zeit für Großzander.'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'wobbler',ib:'rgba(200,168,58,.1)',n:'Großer Wobbler (Tiefläufer)',ty:'Hardbait',de:'11–17cm · Tiefläufer',pm:'Stop-and-Go über Strukturen',ri:'Stahlvorfach empfohlen',si:'11–17 cm',sp:'Langsam',bo:'+18%',st:'Langsam über Strukturen. Stop-and-Go mit langen Pausen.',ck:'Rotbauch, Silber, Bleak',ct:'Firetiger, Gelb',no:'Tiefläufer bleibt nah am Boden.'},{r:3,rb:'rgba(212,133,74,.12)',rc:'var(--accent-amber)',ic:'blade',ib:'rgba(212,133,74,.1)',n:'Blade Bait / Zitteraal',ty:'Hardbait',de:'14–28g · Jigging vertikal',pm:'Vertikales Jigging über Struktur',ri:'Direkt, kein Vorfach',si:'14–28 g',sp:'Vertikal',bo:'+14%',st:'Vertikal jigging: kurze Hüpfer direkt über Steinschüttungen.',ck:'Silber, Chrom',ct:'Gold, Kupfer',no:'Vibration über Seitenlinie sehr effektiv.'},{r:4,rb:'rgba(58,152,152,.12)',rc:'var(--accent-water)',ic:'livebait',ib:'rgba(58,152,152,.1)',n:'Köderfisch',ty:'Livebait',de:'Rotauge 8–14cm · Pose',pm:'Ansitz: Vor Struktur stellen',ri:'Pose oder Grundmontage',si:'8–14 cm',sp:'Statisch',bo:'+20%',st:'Vor Struktur positionieren und geduldig warten.',ck:'–',ct:'–',no:'Höchste Erfolgsquote. Stahlvorfach ist Pflicht!'}]},Winter:{sl:'Winter – kurze Beißphasen',sn:'Zander im Tiefwasser. Low-Action Shad mit Pausen bis 20 Sek.',dep:'4–10m',str:'Fahrrinnen, tiefe Kolke, Hafenbecken',score:52,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'shadLow',ib:'rgba(79,168,110,.08)',n:'Low-Action Shad (No-Action)',ty:'Softbait – passive Fische',de:'7–12cm · Jigkopf 10–21g',pm:'Schleichen: Pausen bis 20 Sek. halten',ri:'Jigkopf 10–21g',si:'7–12 cm',sp:'Sehr langsam',bo:'+22%',st:'Bodennah schleichen, bis 20 Sek. keine Bewegung.',ck:'Naturfarben, Weiß, Perlmutt',ct:'UV-Orange, Chartreuse',no:'Im Winter ist Geduld der wichtigste Faktor.'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'dropshot',ib:'rgba(79,168,110,.08)',n:'Dropshot Rig',ty:'Rig – Finesse',de:'5–9cm · 15–30g Blei',pm:'Vor Ort zittern, kaum Bewegung',ri:'Dropshot 15–30g',si:'5–9 cm',sp:'Statisch / Minimal',bo:'+18%',st:'Vor Ort stehen lassen, minimal zittern.',ck:'Naturfarben, Perlmutt',ct:'Weiß, Gelb',no:'Dropshot hält Köder genau in Maulhöhe.'},{r:3,rb:'rgba(212,133,74,.12)',rc:'var(--accent-amber)',ic:'blade',ib:'rgba(212,133,74,.1)',n:'Blade Bait / Pilker',ty:'Hardbait',de:'15–40g · Jigging',pm:'Vertikales Jigging vom Boot',ri:'Direkt',si:'15–40 g',sp:'Vertikal',bo:'+10%',st:'Kurze Hüpfer, lange Pausen. Ideal vom Boot vertikal.',ck:'Silber, Gold',ct:'UV-Weiß',no:'Vom Boot aus vertikales Jiggen sehr effektiv.'}]},Frühjahr:{sl:'Frühjahr – Vorlaich-Fressphase',sn:'Zander frisst intensiv vor dem Laich. Beste Chancen des Jahres!',dep:'2–6m',str:'Buhnen, Spundwände, Kanalränder',score:82,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'shad',ib:'rgba(79,168,110,.1)',n:'Action Shad (mittelgroß)',ty:'Softbait',de:'10–15cm · Jigkopf 14–28g',pm:'Jiggen mit Grundkontakt, Hopser',ri:'Jigkopf 14–28g',si:'10–15 cm',sp:'Langsam bis mittel',bo:'+20%',st:'Grundkontakt halten, Hopser einbauen.',ck:'Bleak, Silber-Blau, Naturfarben',ct:'Chartreuse, UV-Orange',no:'Vorlaichphase = Fresswut!'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'wobbler',ib:'rgba(200,168,58,.1)',n:'Suspending Wobbler',ty:'Hardbait',de:'9–14cm · Suspending',pm:'Stop-and-Go, stehen lassen',ri:'Direkt oder Stahlvorfach',si:'9–14 cm',sp:'Mittel',bo:'+15%',st:'Stop-and-Go, Wobbler im Wasser schweben lassen.',ck:'Rotbauch, Bleak, Silber',ct:'Firetiger',no:'Suspending-Wobbler stehen bleiben = Zanderreiz.'},{r:3,rb:'rgba(212,133,74,.12)',rc:'var(--accent-amber)',ic:'shadLow',ib:'rgba(79,168,110,.08)',n:'Low-Action Shad (schlank)',ty:'Softbait – Finesse',de:'8–12cm · Dropshot / Texas',pm:'Dropshot oder Texas Rig',ri:'Dropshot 15–20g',si:'8–12 cm',sp:'Langsam',bo:'+12%',st:'Schlank gebaut – Zander kann beim Einsaugen gut einfalten.',ck:'Naturfarben, Weiß',ct:'Chartreuse, Motor Oil',no:'Schlanke Gummis haben höhere Bissausbeute.'}]},Sommer:{sl:'Sommer – Dämmerung & Nacht',sn:'Beißphasen auf Dämmerung konzentriert. Tagsüber kaum Chancen.',dep:'4–9m',str:'Tiefste Strukturen, Brückenpfeiler, Schatten',score:58,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'shad',ib:'rgba(79,168,110,.1)',n:'Action Shad (groß, nachts)',ty:'Softbait',de:'12–18cm · Jigkopf 21–35g',pm:'Bodennah Jiggen – nur nachts!',ri:'Jigkopf 21–35g',si:'12–18 cm',sp:'Langsam – nachtaktiv',bo:'+18%',st:'Bodennah jiggen bei Abenddämmerung und nachts.',ck:'Weiß-Silber, Perlmutt',ct:'UV-aktiv, Chartreuse',no:'Zander ist lichtscheu.'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'dropshot',ib:'rgba(79,168,110,.08)',n:'Dropshot (fein, Nacht)',ty:'Rig – Finesse',de:'6–10cm · 20–35g',pm:'Vor Anker stationär führen',ri:'Dropshot 20–35g',si:'6–10 cm',sp:'Statisch',bo:'+12%',st:'Vor Anker vom Boot, Köder freistehend.',ck:'Naturfarben, Shrimp',ct:'Weiß',no:'Stationäre Köderführung nachts sehr effektiv.'}]}},Hecht:{Herbst:{sl:'Herbst – Hauptsaison',sn:'Fressrausch vor Winter. Jerkbait-Saison!',dep:'1–5m',str:'Einlaufbereiche, Buhnen, Stege, Krautkanten',score:82,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'jerkbait',ib:'rgba(200,112,58,.1)',n:'Jerkbait (Hard / Soft)',ty:'Hardbait – Twitching',de:'14–25cm · Stahlvorfach',pm:'Twitching: Ruck-Ruck-Pause',ri:'Stahlvorfach 20–30kg',si:'14–25 cm',sp:'Ruckartig',bo:'+25%',st:'Kurze abrupte Rutenschläge 5–20cm Amplitude.',ck:'Naturfarben, Rotbauch, Silber',ct:'Firetiger, Chartreuse, UV',no:'Herbst ist Jerkbait-Saison!'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'shad',ib:'rgba(79,168,110,.08)',n:'Sehr großer Action Shad',ty:'Softbait',de:'18–30cm · Jigkopf 28–60g',pm:'Steady Retrieve nahe Mittelwasser',ri:'Jigkopf 28–60g',si:'18–30 cm',sp:'Mittel – gleichmäßig',bo:'+22%',st:'Gleichmäßig nahe Mittelwasser.',ck:'Naturperch, Silber-Blau, Weiß',ct:'Schwarz, UV-Chartreuse',no:'Größe zählt – Hecht greift sehr große Beute.'},{r:3,rb:'rgba(212,133,74,.12)',rc:'var(--accent-amber)',ic:'spinner',ib:'rgba(200,168,58,.1)',n:'Bucktail-Jig',ty:'Hardbait',de:'28–70g · pulsierend',pm:'Steady Retrieve, gelegentlich stoppen',ri:'Direkt',si:'28–70 g',sp:'Gleichmäßig',bo:'+18%',st:'Mittelschnell und pulsierend.',ck:'Weiß, Schwarz-Weiß',ct:'Chartreuse, Gelb',no:'Pulsierendes Haar imitiert verletzten Beutefisch.'},{r:4,rb:'rgba(58,152,152,.12)',rc:'var(--accent-water)',ic:'livebait',ib:'rgba(58,152,152,.1)',n:'Köderfisch (groß)',ty:'Livebait',de:'12–20cm · Treble-Rig',pm:'Ansitz vor Einlauf / Struktur',ri:'Treble-Rig + Stahlvorfach',si:'12–20 cm',sp:'Statisch',bo:'+20%',st:'Vor Einlauf oder Struktur setzen.',ck:'–',ct:'–',no:'Stahlvorfach IMMER.'}]},Winter:{sl:'Winter – selten aktiv',sn:'Hecht frisst alle 7–10 Tage. Wenige gezielte Ansitze.',dep:'1–4m',str:'Südexponierte Ufer, Stege, Buchten',score:44,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'shadLow',ib:'rgba(79,168,110,.08)',n:'Großer Low-Action Shad',ty:'Softbait',de:'14–22cm · Jigkopf 21–40g',pm:'Schleichen mit langen Pausen',ri:'Jigkopf 21–40g',si:'14–22 cm',sp:'Sehr langsam',bo:'+18%',st:'Sehr langsam über Grund schleichen.',ck:'Naturperch, Silber-Blau',ct:'Chartreuse, UV-Orange',no:'Im Winter frisst Hecht nur alle 7–10 Tage.'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'wobbler',ib:'rgba(200,168,58,.1)',n:'Suspending Wobbler',ty:'Hardbait',de:'12–18cm · Suspending',pm:'Stop-and-Go, sehr langes Stehen',ri:'Stahlvorfach',si:'12–18 cm',sp:'Sehr langsam',bo:'+15%',st:'Sehr langes Stop-and-Go.',ck:'Rotbauch, Silber',ct:'Firetiger',no:'Suspending Wobbler bei kaltem Wasser.'},{r:3,rb:'rgba(212,133,74,.12)',rc:'var(--accent-amber)',ic:'livebait',ib:'rgba(58,152,152,.1)',n:'Köderfisch (Ansitz)',ty:'Livebait',de:'8–15cm · Pose',pm:'Stundenlanger Ansitz',ri:'Posenmontage + Stahlvorfach',si:'8–15 cm',sp:'Statisch',bo:'+20%',st:'Stundenlangen Ansitz einplanen.',ck:'–',ct:'–',no:'Geduld ist entscheidend.'}]},Frühjahr:{sl:'Nachlaich – Fresswut',sn:'Weibchen nach Laich ausgehungert.',dep:'0.5–2m',str:'Schilf, Krautbänke, Totholz',score:88,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'spinner',ib:'rgba(200,168,58,.1)',n:'Spinnerbait',ty:'Hardbait',de:'14–28g · weedless',pm:'Steady Retrieve durch Kraut',ri:'Direkt',si:'14–28 g',sp:'Mittelschnell',bo:'+22%',st:'Gleichmäßig mittelschnell, knapp über Kraut.',ck:'Silber-Gold, Weiß',ct:'Chartreuse-Weiß',no:'Spinnerbait kommt kaum im Kraut hängen.'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'shad',ib:'rgba(79,168,110,.08)',n:'Gummifisch (weightless)',ty:'Softbait',de:'10–16cm · Texas Rig',pm:'Texas Rig durch Deckung gleiten',ri:'Weedless Texas / Offset-Haken',si:'10–16 cm',sp:'Langsam',bo:'+18%',st:'Langsam durch Deckung gleiten lassen.',ck:'Naturperch, Weiß',ct:'Chartreuse',no:'Weedless = durch dichtestes Schilf möglich.'},{r:3,rb:'rgba(212,133,74,.12)',rc:'var(--accent-amber)',ic:'jerkbait',ib:'rgba(200,112,58,.08)',n:'Chatterbait',ty:'Hardbait',de:'14–21g · Krautkanten',pm:'Gleichmäßig, gelegentlich stoppen',ri:'Direkt',si:'14–21 g',sp:'Mittel',bo:'+15%',st:'Entlang Krautkanten gleichmäßig.',ck:'Weiß-Silber',ct:'Chartreuse',no:'Starke Vibration lockt Hecht aus tiefer Deckung.'}]},Sommer:{sl:'Sommer – Morgen & Abend',sn:'Hecht in Deckung. Topwater morgens spektakulär.',dep:'0.5–3m',str:'Schilf-Außenkanten, Seerosenfelder',score:65,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'popper',ib:'rgba(79,168,110,.08)',n:'Oberflächenköder / Popper',ty:'Hardbait – Surface',de:'10–16cm · Gurren + Pausen',pm:'Topwater: Gurren, Pause, warten',ri:'Direkt',si:'10–16 cm',sp:'Zuckend',bo:'+20%',st:'Gurren und lange Pause. Früh morgens!',ck:'Frosch-Grün, Weiß',ct:'Weiß-Gelb, Schwarz',no:'Spektakulärstes Erlebnis der Saison.'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'popper',ib:'rgba(79,168,110,.06)',n:'Froschköder (Hollow Body)',ty:'Softbait – Weedless',de:'7–12cm · über Kraut',pm:'Über Seerosenfelder ziehen',ri:'Weedless',si:'7–12 cm',sp:'Langsam',bo:'+18%',st:'Über Kraut ziehen, Pausen am Rand.',ck:'Naturgrün, Weiß',ct:'Schwarz',no:'Direkt ins dichteste Kraut möglich.'}]}},Barsch:{Herbst:{sl:'Herbst – Schwärme tiefer',sn:'Barsch in 2–6m, kompakte Schwärme.',dep:'2–6m',str:'Steinschüttungen, Buhnenköpfe, Totholz',score:76,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'shad',ib:'rgba(79,168,110,.1)',n:'Mittelgroßer Action Shad',ty:'Softbait',de:'7–12cm · Jigkopf 5–14g',pm:'Jiggen nahe Strukturkante',ri:'Jigkopf 5–14g',si:'7–12 cm',sp:'Mittel bis langsam',bo:'+20%',st:'Jigging nahe Strukturkante.',ck:'Naturperch, Silber-Blau',ct:'Chartreuse, UV-Orange',no:'Schwarmfisch: nach erstem Fang weitercasten!'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'dropshot',ib:'rgba(79,168,110,.08)',n:'Dropshot (vor Struktur)',ty:'Rig – Finesse',de:'5–8cm · 7–18g',pm:'Vor Struktur stationär zittern',ri:'Dropshot 7–18g',si:'5–8 cm',sp:'Minimal',bo:'+18%',st:'Vor Struktur stehen, minimal zittern.',ck:'Naturfarben, Shrimp',ct:'Weiß',no:'Dropshot genau in Maulhöhe.'},{r:3,rb:'rgba(212,133,74,.12)',rc:'var(--accent-amber)',ic:'blade',ib:'rgba(212,133,74,.1)',n:'Blade Bait / Zitteraal',ty:'Hardbait',de:'7–18g · Jigging',pm:'Vertikales Jigging über Schwarm',ri:'Direkt',si:'7–18 g',sp:'Vertikal',bo:'+15%',st:'Vertikal jigging direkt über Schwarm.',ck:'Silber',ct:'Gold',no:'Echolot-Schwarm lokalisieren dann vertikal drüber.'}]},Winter:{sl:'Winter – Micro-Jigging',sn:'Barsch in tiefen Strukturen. Micro-Jigging effektiv.',dep:'3–8m',str:'Tiefe Steine, Holz, Hafenbecken',score:60,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'dropshot',ib:'rgba(79,168,110,.08)',n:'Micro-Jig / Feiner Dropshot',ty:'Finesse – Micro',de:'3–6cm · 2–7g',pm:'Micro-Jigging: fein zittern',ri:'Micro-Jigkopf 2–5g oder Dropshot',si:'3–6 cm',sp:'Fein zitternd',bo:'+20%',st:'Sehr fein zittern, langer Grundkontakt.',ck:'Naturfarben, Silber-Glitter',ct:'Chartreuse, UV-Orange',no:'Im Winter sind kleine feine Köder entscheidend.'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'shadLow',ib:'rgba(79,168,110,.06)',n:'Low-Action Shad (klein)',ty:'Softbait',de:'4–7cm · Jigkopf 3–7g',pm:'Schleichen, lange Bodenpausen',ri:'Jigkopf 3–7g',si:'4–7 cm',sp:'Sehr langsam',bo:'+16%',st:'Schleichen mit Pausen.',ck:'Naturfarben, Weiß',ct:'Gelb, Chartreuse',no:'Kleiner Low-Action Shad = Winter-Schlüssel.'}]},Frühjahr:{sl:'Nachlaich – Aufbau-Phase',sn:'Barsch wieder aktiv, Schwärme an Flachwasser.',dep:'1–3m',str:'Flache Steine, Krautkanten, Stege',score:72,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'shad',ib:'rgba(79,168,110,.1)',n:'Kleiner Action Shad',ty:'Softbait',de:'5–9cm · Jigkopf 3–7g',pm:'Jiggen + Steady Retrieve',ri:'Jigkopf 3–7g',si:'5–9 cm',sp:'Langsam',bo:'+18%',st:'Jiggen oder gleichmäßig führen.',ck:'Wassermelone, Motor Oil',ct:'Chartreuse',no:'Frühjahr Barsch sehr aktiv.'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'spinner',ib:'rgba(200,168,58,.1)',n:'Inline-Spinner (Mepps)',ty:'Hardbait – Klassiker',de:'3–10g · gleichmäßig',pm:'Steady Retrieve mittelschnell',ri:'Direkt',si:'3–10 g',sp:'Gleichmäßig',bo:'+16%',st:'Gleichmäßig mittelschnell führen.',ck:'Silber, Gold',ct:'Rot-Weiß',no:'Klassiker für Frühjahrs-Barsch.'}]},Sommer:{sl:'Sommer – TOP-Saison',sn:'Bestes Barsch-Halbjahr! Schwärme sichtbar.',dep:'1–4m',str:'Krautkanten, Steine, Buhnenköpfe',score:88,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'shad',ib:'rgba(79,168,110,.1)',n:'Kleiner Action Shad',ty:'Softbait',de:'5–10cm · Jigkopf 3–10g',pm:'Jiggen entlang Strukturkante',ri:'Jigkopf 3–10g',si:'5–10 cm',sp:'Mittel – hopsend',bo:'+22%',st:'Jigging entlang Strukturkante.',ck:'Naturperch, Silber-Blau',ct:'UV-Orange, Chartreuse',no:'Schwarmfisch: nach erstem Fang weitercasten!'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'dropshot',ib:'rgba(79,168,110,.08)',n:'Ned Rig (Sommer)',ty:'Rig – Finesse',de:'3–6cm · Ned-Kopf 2–5g',pm:'Grund stehen lassen, wackeln',ri:'Ned-Jigkopf 2–5g',si:'3–6 cm',sp:'Minimal',bo:'+18%',st:'Am Grund stehen, leicht wackeln.',ck:'Motor Oil, Schwarz-Blau',ct:'Motor Oil',no:'Auch passive Barsche greifen.'},{r:3,rb:'rgba(212,133,74,.12)',rc:'var(--accent-amber)',ic:'spinner',ib:'rgba(200,168,58,.1)',n:'Inline-Spinner',ty:'Hardbait',de:'5–12g · schnell',pm:'Schnell durch sichtbaren Schwarm',ri:'Direkt',si:'5–12 g',sp:'Schnell',bo:'+16%',st:'Schnell durch sichtbaren Schwarm.',ck:'Silber, Gold',ct:'Chartreuse',no:'Bei sichtbarer Oberflächen-Jagd: Spinner rein!'}]}},Forelle:{Herbst:{sl:'Herbst (Äsche aktiv)',sn:'Bachforelle ab Oktober Schonzeit! Äsche mit Tungsten-Nymphe.',dep:'0.5–2m',str:'Tiefe Strömungsrinnen, Kolke',score:68,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'nymph',ib:'rgba(212,133,74,.1)',n:'Tungsten-Nymphe (schwer)',ty:'Fliegenfischen – Äsche',de:'Haken 10–14 · Euro-Nymphing',pm:'Euro-Nymphing: sehr tief driften',ri:'Euro-Nymphing oder Indicator',si:'Haken 10–14',sp:'Natürlich treibend',bo:'+25%',st:'Sehr tief driften.',ck:'Kupfer-Orange, Schwarz',ct:'Kupfer, Rot-Braun',no:'Äsche im Herbst auf Tungsten-Bead-Nymphen.'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'dryfly',ib:'rgba(143,212,106,.08)',n:'Kleine Trockenfliege (Midge)',ty:'Fliegenfischen – Äsche',de:'Haken 18–22 · Midge',pm:'Drag-free drift in ruhigen Stellen',ri:'Floatschnur, Vorfach 0.08–0.10mm',si:'Haken 18–22',sp:'Drag-free',bo:'+16%',st:'Absolut drag-free in ruhigen Buchten.',ck:'Grau, Schwarz',ct:'Braun, Dunkel',no:'Herbst-Midge-Hatches für Äsche.'}]},Winter:{sl:'Winter – Äsche aktiv!',sn:'Forelle Schonzeit. Äsche auf Schwernymphen.',dep:'0.5–2.5m',str:'Kolke, tiefe Strömungsrinnen',score:62,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'nymph',ib:'rgba(212,133,74,.1)',n:'Schwernymphe / Tungsten-Bead',ty:'Fliegenfischen – Äsche',de:'Haken 10–14 · Indicator / Euro',pm:'Tschechische Nymphe: tief driften',ri:'Indicator-Rig oder Euro-Nymphing',si:'Haken 10–14',sp:'Tief treibend',bo:'+25%',st:'Tief am Grund driften.',ck:'Kupfer-Orange, Schwarz-Silber',ct:'Olive, Braun',no:'Winter = beste Äschen-Zeit!'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'dryfly',ib:'rgba(143,212,106,.06)',n:'Kleine Nass-Fliege / Soft Hackle',ty:'Fliegenfischen',de:'Haken 14–18 · Nass',pm:'Quer und abwärts driften',ri:'Klassisch nass',si:'Haken 14–18',sp:'Natürlich',bo:'+15%',st:'Quer zur Strömung auswerfen.',ck:'Grau, Braun',ct:'Olive',no:'Soft Hackle imitiert schlüpfende Insekten.'}]},Frühjahr:{sl:'Hatch-Saison – Höhepunkt',sn:'Mayfly & Sedge-Hatches! Beste Fliegenfischen-Zeit.',dep:'0.2–1.2m',str:'Kiesbänke, Strömungskanten, ruhige Buchten',score:90,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'dryfly',ib:'rgba(143,212,106,.1)',n:'Trockenfliege (Mayfly / CDC)',ty:'Fliegenfischen – Top-Technik',de:'Haken 14–18 · Drag-free',pm:'Drag-free drift – absolut natürlich',ri:'Floatschnur, langer Vorfach 0.10–0.14mm',si:'Haken 14–20',sp:'Drag-free',bo:'+30%',st:'Absolut drag-free drift.',ck:'Naturolive, Beige, Grau-Caddis',ct:'Sedge-Braun',no:'Bei sichtbarem Laichen sofort Trockenfliege!'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'dryfly',ib:'rgba(143,212,106,.08)',n:'Emerger / Parachute',ty:'Fliegenfischen',de:'Haken 14–18 · Emerger',pm:'In der Oberfläche treiben, zucken',ri:'In der Oberfläche',si:'Haken 14–18',sp:'Minimal zuckend',bo:'+22%',st:'In der Oberfläche treiben.',ck:'Oliv-Grau, Braun',ct:'Braun',no:'Emerger wenn Fische im Film stehen.'},{r:3,rb:'rgba(212,133,74,.12)',rc:'var(--accent-amber)',ic:'nymph',ib:'rgba(212,133,74,.1)',n:"Nymphe (Hare's Ear)",ty:'Fliegenfischen',de:'Haken 12–16 · Universal',pm:'Euro-Nymphing wenn kein Hatch',ri:'Euro-Nymphing oder Indicator',si:'Haken 12–16',sp:'Treibend',bo:'+18%',st:'Tief driften wenn kein Hatch sichtbar.',ck:'Naturolive, Braun, Kupfer',ct:'Kupfer, Dunkelbraun',no:'Nymphe als Ergänzung wenn kein Hatch aktiv.'}]},Sommer:{sl:'Sommer – Hatch-Saison',sn:'Abend-Hatch oft spektakulär.',dep:'0.3–2m',str:'Schattige Ufer, überhängende Bäume, Kolke',score:72,baits:[{r:1,rb:'rgba(79,168,110,.15)',rc:'var(--accent)',ic:'dryfly',ib:'rgba(143,212,106,.1)',n:'Trockenfliege Abend-Hatch',ty:'Fliegenfischen',de:'Haken 14–20 · Abend-Sedge',pm:'Drag-free drift bei Abenddämmerung',ri:'Floatschnur, feiner Vorfach 0.10–0.14mm',si:'Haken 14–20',sp:'Drag-free',bo:'+28%',st:'Drag-free bei Abenddämmerung.',ck:'Sedge-Braun, Grau-Oliv',ct:'Sedge-Braun, Dunkel',no:'Abend-Sedge Hatch unvergesslich.'},{r:2,rb:'rgba(200,168,58,.12)',rc:'var(--accent-yellow)',ic:'dryfly',ib:'rgba(143,212,106,.08)',n:'Terrestrial (Heuschreck/Ameise)',ty:'Fliegenfischen',de:'Haken 10–16 · Ufer',pm:'Unter Äste werfen, zucken lassen',ri:'Trocken, nahe Ufer',si:'Haken 10–16',sp:'Zuckend',bo:'+22%',st:'Unter überhängende Äste werfen.',ck:'Schwarz, Braun, Gelb-Schwarz',ct:'Schwarz',no:'Terrestrials: Forelle reagiert blitzschnell.'}]}}};
+
+function getCurrentSeason(){const m=new Date().getMonth()+1;if(m>=3&&m<=5)return'Frühjahr';if(m>=6&&m<=8)return'Sommer';if(m>=9&&m<=11)return'Herbst';return'Winter';}
+function scoreArc(s){return Math.round(352*(1-s/100));}
+function scoreColor(s){return s>=80?'#4fa86e':s>=60?'#c8a83a':s>=40?'#d4854a':'#c0503a';}
+function scoreLabel(s){return s>=80?'Top – unbedingt raus!':s>=60?'Gut – lohnt sich':s>=40?'Mittelmäßig – probieren':'Schlechte Bedingungen';}
+function formatDate(d){const days=['So','Mo','Di','Mi','Do','Fr','Sa'],months=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];return`${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;}
+function getGreeting(h){return h<12?'Guten Morgen':h<18?'Guten Tag':'Guten Abend';}
+function updateClock(){const n=new Date(),hh=String(n.getHours()).padStart(2,'0'),mm=String(n.getMinutes()).padStart(2,'0'),t=`${hh}:${mm}`;document.querySelectorAll('.sb-clock-ref').forEach(e=>e.textContent=t);const sb=document.getElementById('sb-clock');if(sb)sb.textContent=t;const gr=document.getElementById('greeting');if(gr)gr.textContent=getGreeting(n.getHours());const sd=document.getElementById('score-date');if(sd)sd.innerHTML=`${formatDate(n)}<br>${t}`;}
+
+const FD_BASE={Zander:{depth:'3–8m',struct:'Buhnen, Spundwände',i1:'shad',i2:'wobbler'},Hecht:{depth:'1–5m',struct:'Schilf, Einlaufbereiche',i1:'jerkbait',i2:'shad'},Barsch:{depth:'1–4m',struct:'Krautkanten, Steine',i1:'shad',i2:'dropshot'},Forelle:{depth:'0.3–2m',struct:'Strömungskanten, Kolke',i1:'dryfly',i2:'nymph'}};
+function getTopBaits(fish,season){return(SEASON_BAITS[fish]?.[season]?.baits||[]).slice(0,2);}
+
+let cFish='Zander',cSeason=getCurrentSeason(),turbid='klar',mapMode='2d';
+let lmap=null,lmarker=null;
+let cLat=48.744,cLng=9.316,cWater='Neckar – Esslingen';
+
+const SCR={home:'screen-home',baits:'screen-baits',map:'screen-map',diary:'screen-diary',settings:'screen-settings'};
+function goTo(n){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const scr=document.getElementById(SCR[n]);
+  if(scr){scr.classList.add('active');const ss=scr.querySelector('.screen-scroll');if(ss)ss.scrollTop=0;}
+  closeDetail();
+  document.querySelectorAll('#main-navbar .nav-item').forEach(el=>el.classList.remove('active'));
+  const navEl=document.getElementById('nav-'+n);if(navEl)navEl.classList.add('active');
+  if(n==='map')setTimeout(initLeaflet,150);
+  if(n==='home'&&!weatherFetching)refreshWeather();
+  if(n==='baits'){ const r=document.getElementById('ki-results'); if(!r||r.style.display==='none') getKIRecommendation(); }
+}
+
+function selectFish(el,name){cFish=name;document.querySelectorAll('.fish-pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');document.getElementById('bait-screen-title').textContent='Köder – '+name;updateHomeScore();renderBaits(name,cSeason);}
+function selectSeason(name){cSeason=name;document.querySelectorAll('.season-chip').forEach(c=>{const a=c.dataset.s===name;c.style.background=a?'rgba(79,168,110,.12)':'var(--bg-input)';c.style.color=a?'var(--accent)':'var(--text-muted)';c.style.borderColor=a?'rgba(79,168,110,.25)':'transparent';});updateHomeScore();renderBaits(cFish,name);}
+
+function renderBaits(fish,season){
+  const d=SEASON_BAITS[fish]?.[season];if(!d)return;
+  document.getElementById('bait-season-label').textContent=d.sl;
+  document.getElementById('bait-season-note').textContent=d.sn;
+  document.getElementById('bait-depth').textContent=d.dep;
+  document.getElementById('bait-struct').textContent=d.str;
+  const s=d.score,col=scoreColor(s);
+  const badge=document.getElementById('bait-score-badge');
+  if(badge){badge.textContent=scoreLabel(s)+' ('+s+'%)';badge.style.background=col+'22';badge.style.color=col;}
+  document.getElementById('bait-list-container').innerHTML=d.baits.map((b,i)=>`
+    <div class="bait-item" style="cursor:pointer;" onclick="openDetail(${i})">
+      <div class="bait-rank" style="background:${b.rb};color:${b.rc};">${b.r}</div>
+      <div class="lure-box" style="background:${b.ib};">${IC[b.ic]||''}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:500;font-size:13px;">${b.n}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">${b.de}</div>
+        <div style="margin-top:3px;"><span class="method-tag">▶ ${b.pm}</span></div>
+        <div class="ck" style="font-size:11px;color:var(--text-sec);margin-top:2px;${turbid==='trueb'?'display:none':''}">Farbe: ${b.ck}</div>
+        <div class="ct" style="font-size:11px;color:var(--text-sec);margin-top:2px;${turbid==='klar'?'display:none':''}">Farbe: ${b.ct}</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`).join('');
+}
+
+function openDetail(i){const b=SEASON_BAITS[cFish]?.[cSeason]?.baits[i];if(!b)return;document.getElementById('detail-title').textContent=b.n;document.getElementById('detail-lure-wrap').innerHTML=`<div style="background:${b.ib};width:100%;height:100%;border-radius:11px;display:flex;align-items:center;justify-content:center;">${IC[b.ic]||''}</div>`;['detail-name','detail-type','detail-size','detail-rig','detail-speed','detail-boost','detail-style','detail-note'].forEach(id=>{const map={'detail-name':b.n,'detail-type':b.ty,'detail-size':b.si,'detail-rig':b.ri,'detail-speed':b.sp,'detail-boost':b.bo,'detail-style':b.st,'detail-note':b.no};document.getElementById(id).textContent=map[id];});document.getElementById('detail-method').textContent=b.pm;document.getElementById('detail-color-klar').textContent=b.ck;document.getElementById('detail-color-trueb').textContent=b.ct;document.getElementById('detail-overlay').classList.add('open');}
+function closeDetail(){document.getElementById('detail-overlay').classList.remove('open');}
+function setTurbid(t){turbid=t;document.getElementById('turbid-klar').classList.toggle('active',t==='klar');document.getElementById('turbid-trueb').classList.toggle('active',t==='trueb');document.querySelectorAll('.ck').forEach(e=>e.style.display=t==='klar'?'block':'none');document.querySelectorAll('.ct').forEach(e=>e.style.display=t==='trueb'?'block':'none');}
+
+// ── LEAFLET MAP ──────────────────────────────────────────────────────────
+// ── GEWÄSSERNAME per Overpass + Nominatim ────────────────────────────
+async function resolveWaterName(lat, lng){
+  const la=parseFloat(lat), lo=parseFloat(lng);
+  if(isNaN(la)||isNaN(lo)) return null;
+
+  // Strategie 1: Overpass API – findet Gewässer per Radius
+  try{
+    const q='[out:json][timeout:5];(way["water"](around:300,'+la+','+lo+');way["waterway"](around:300,'+la+','+lo+');way["natural"="water"](around:300,'+la+','+lo+');relation["water"](around:300,'+la+','+lo+'););out tags 1;';
+    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:q});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(d.elements&&d.elements.length>0){
+      const t=d.elements[0].tags||{};
+      const wname=t.name||t['name:de']||null;
+      if(wname){
+        const city=await getNearestCity(la,lo);
+        return city?wname+' – '+city:wname;
+      }
+    }
+  }catch(e){ /* Overpass nicht erreichbar – weiter */ }
+
+  // Strategie 2: Nominatim Reverse
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/reverse?lat='+la+'&lon='+lo+'&format=json&accept-language=de&zoom=14',{headers:{'Accept-Language':'de'}});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json(); const a=d.address||{};
+    const isWater=d.class==='waterway'||d.class==='water'||d.class==='natural'||d.type==='river'||d.type==='lake'||d.type==='stream'||d.type==='reservoir';
+    const wname=(isWater&&d.name)?d.name:(a.water||a.river||a.stream||a.lake||a.reservoir||a.waterway||null);
+    const city=a.city||a.town||a.village||a.county||'';
+    if(wname) return city?wname+' – '+city:wname;
+    if(city)  return city;
+  }catch(e){ /* Nominatim nicht erreichbar */ }
+
+  // Fallback: Koordinaten
+  return la.toFixed(3)+'°N '+lo.toFixed(3)+'°E';
+}
+
+async function getNearestCity(lat,lng){
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lng+'&format=json&accept-language=de&zoom=10');
+    if(!r.ok) return '';
+    const d=await r.json(); const a=d.address||{};
+    return a.city||a.town||a.village||a.county||'';
+  }catch(e){ return ''; }
+}
+
+
+function initLeaflet(){
+  const container=document.getElementById('map-leaflet');
+  if(lmap){setTimeout(()=>lmap.invalidateSize(),50);return;}
+  lmap=L.map('map-leaflet',{zoomControl:false,attributionControl:false}).setView([cLat,cLng],14);
+  L.control.zoom({position:'bottomright'}).addTo(lmap);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,crossOrigin:true}).addTo(lmap);
+  const icon=L.divIcon({html:`<div style="width:14px;height:14px;background:#4fa86e;border-radius:50%;border:2.5px solid #dff0e4;box-shadow:0 0 0 5px rgba(79,168,110,.25);"></div>`,className:'',iconAnchor:[7,7]});
+  lmarker=L.marker([cLat,cLng],{icon}).addTo(lmap);
+
+  // ✅ FIX: Kartenklick mit Reverse-Geocoding
+  lmap.on('click', async e=>{
+    cLat=e.latlng.lat; cLng=e.latlng.lng;
+    lmarker.setLatLng([cLat,cLng]);
+    const msg=document.getElementById('gps-msg');
+    if(msg){msg.style.display='block'; msg.textContent='Gewässer wird ermittelt…';}
+    cWater = await resolveWaterName(cLat, cLng);
+    const found=Object.entries(LOCS).find(([k,v])=>Math.hypot(v.lat-cLat,v.lng-cLng)<0.15);
+    if(found) document.getElementById('gewaesser-select').value=found[0];
+    updateLocLabel();
+    if(msg)setTimeout(()=>{msg.style.display='none';},2500);
+    refreshWeather();
+  });
+
+  setTimeout(()=>lmap.invalidateSize(),200);
+}
+
+function doGPS(){
+  const btn=document.getElementById('btn-gps'),msg=document.getElementById('gps-msg');
+  msg.style.display='block';msg.textContent='GPS wird ermittelt…';btn.style.color='var(--accent)';
+  if(!navigator.geolocation){msg.textContent='GPS nicht verfügbar';return;}
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    cLat=pos.coords.latitude; cLng=pos.coords.longitude;
+    if(lmap){lmap.setView([cLat,cLng],15); lmarker.setLatLng([cLat,cLng]);}
+    const name = await resolveWaterName(cLat, cLng);
+    if(name) cWater=name;
+    updateLocLabel();
+    const msg=document.getElementById('gps-msg');
+    if(msg){msg.textContent='📍 '+cWater; setTimeout(()=>msg.style.display='none',3000);}
+    refreshWeather();
+  },()=>{
+    const msg=document.getElementById('gps-msg');
+    if(msg){msg.textContent='GPS verweigert – Karte antippen'; setTimeout(()=>msg.style.display='none',3000);}
+  },{enableHighAccuracy:true,timeout:10000});
+}
+
+function updateLocLabel(){
+  const t=cWater+' · '+parseFloat(cLat).toFixed(4)+'°N '+parseFloat(cLng).toFixed(4)+'°E · Klick = Standort setzen';
+  document.getElementById('map-loc-label').textContent=t;
+  document.getElementById('settings-gps').textContent=parseFloat(cLat).toFixed(4)+'°N '+parseFloat(cLng).toFixed(4)+'°E';
+  document.getElementById('loc-name').textContent=cWater;
+}
+
+function setMapMode(m){
+  mapMode=m;const is2d=m==='2d';
+  const leafEl=document.getElementById('map-leaflet'),c3d=document.getElementById('map-3d');
+  const b2=document.getElementById('btn-2d'),b3=document.getElementById('btn-3d');
+  [b2,b3].forEach(b=>{b.style.background='var(--bg-elevated)';b.style.color='var(--text-sec)';b.style.borderColor='var(--border)';});
+  const ab=is2d?b2:b3;ab.style.background='rgba(79,168,110,.15)';ab.style.color='var(--accent)';ab.style.borderColor='rgba(79,168,110,.3)';
+  leafEl.style.display=is2d?'block':'none';c3d.style.display=is2d?'none':'block';
+  if(is2d){if(!lmap)initLeaflet();else setTimeout(()=>lmap.invalidateSize(),50);}else draw3D(c3d);
+}
+
+function draw3D(cv){
+  const wrap=document.getElementById('map-wrap');const dpr=window.devicePixelRatio||1;
+  cv.width=wrap.offsetWidth*dpr;cv.height=wrap.offsetHeight*dpr;cv.style.width='100%';cv.style.height='100%';
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  ctx.fillStyle='#0a1f13';ctx.fillRect(0,0,W,H);
+  const R=30,C=44,cW=W/C,cH=H*0.62/R,hz=H*0.25;
+  function dep(c,r){const cx=C/2,w=7;const d=Math.max(0,1-((c-cx)/w)**2)*6.5,n=(Math.sin(c*.8+r*.5)*Math.cos(r*.6-c*.3))*.7;return d+n+.8;}
+  for(let r=R-1;r>=0;r--){for(let c=0;c<C;c++){
+    const d=dep(c,r),t=Math.min(1,d/7.5),ps=.35+(r/R)*.65;
+    const x0=c*cW,x1=(c+1)*cW,y=hz+r*cH*.72;
+    const px0=W/2+(x0-W/2)*ps,px1=W/2+(x1-W/2)*ps;
+    const ri=Math.round(6+t*6),gi=Math.round(22+t*12),bi=Math.round(16+t*52);
+    ctx.fillStyle=`rgb(${ri},${gi},${bi})`;ctx.beginPath();ctx.moveTo(px0,y);ctx.lineTo(px1,y);ctx.lineTo(px1,y+cH*.72);ctx.lineTo(px0,y+cH*.72);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='rgba(31,69,48,.4)';ctx.lineWidth=.5;ctx.stroke();
+    if(d>4.8&&r%6===3&&c%7===3){const cx2=(px0+px1)/2,cy2=y+cH*.36;ctx.fillStyle='rgba(58,152,152,.7)';ctx.font=`${Math.round(6.5*ps)}px sans-serif`;ctx.textAlign='center';ctx.fillText(`${d.toFixed(1)}m`,cx2,cy2);}
+  }}
+  [{c:8,r:20,s:82,l:'Buhne Nord'},{c:30,r:14,s:66,l:'Spundwand Süd'}].forEach(h=>{
+    const ps=.35+(h.r/R)*.65,x=h.c*cW,y=hz+h.r*cH*.72,px=W/2+(x-W/2)*ps;
+    ctx.beginPath();ctx.arc(px,y,6*ps,0,Math.PI*2);ctx.fillStyle=h.s>=80?'rgba(79,168,110,.25)':'rgba(200,168,58,.2)';ctx.fill();
+    ctx.beginPath();ctx.arc(px,y,3.5*ps,0,Math.PI*2);ctx.fillStyle=h.s>=80?'#4fa86e':'#c8a83a';ctx.fill();
+    ctx.fillStyle='rgba(223,240,228,.8)';ctx.font=`${Math.round(8*ps)}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText(h.l,px,y-8*ps);ctx.fillStyle=h.s>=80?'#4fa86e':'#c8a83a';ctx.fillText(h.s+'%',px,y+12*ps);
+  });
+  const gy=hz+15*cH*.72;ctx.beginPath();ctx.arc(W/2,gy,10,0,Math.PI*2);ctx.fillStyle='rgba(79,168,110,.2)';ctx.fill();ctx.beginPath();ctx.arc(W/2,gy,4,0,Math.PI*2);ctx.fillStyle='#4fa86e';ctx.fill();
+}
+
+async function loadHotspots(){
+  const btn=document.getElementById('hs-btn'),res=document.getElementById('hs-results');
+  btn.innerHTML='<span class="loading-dots">Suche läuft</span>';btn.style.pointerEvents='none';
+  res.innerHTML='<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-muted);">Durchsuche Angelberichte für <strong style="color:var(--text-sec);">'+cWater+'</strong><span class="loading-dots"></span></div>';
+  const prompt='Du bist ein erfahrener Angelexperte in Deutschland. Analysiere die aktuellen Bedingungen und empfehle die 4 besten Köder.\n\n'
+    +'STANDORT: '+cWater+'\n'
+    +'ZIELART: '+cFish+'\n'
+    +'JAHRESZEIT: '+cSeason+'\n'
+    +'LUFTTEMPERATUR: '+(apiData.airTemp!=null?apiData.airTemp+'°C':'unbekannt')+'\n'
+    +'WASSERTEMPERATUR: '+(apiData.waterTemp!=null?apiData.waterTemp+'°C':'unbekannt')+'\n'
+    +'WASSERSTAND: '+(apiData.waterLevel!=null?apiData.waterLevel+' cm':'unbekannt')+'\n'
+    +'LUFTDRUCK: '+(apiData.pressure!=null?apiData.pressure+' hPa':'unbekannt')+' ('+pressureTrendLabel(apiData.pressureTrend||'stable_mid')+')\n'
+    +'WIND: '+(apiData.windSpeed!=null?apiData.windSpeed+' km/h':'unbekannt')+'\n'
+    +'BEWÖLKUNG: '+(apiData.cloudcover!=null?apiData.cloudcover+'%':'unbekannt')+'\n'
+    +'TAGESZEIT: '+new Date().getHours()+' Uhr\n'
+    +'\nBerücksichtige alle Faktoren. Passive Fische bei fallendem Druck.\n'
+    +'Antworte NUR mit JSON-Array (kein Markdown):\n'
+    +'[{"name":"Köder-Name","typ":"Kunstköder/Naturköder/Lebendköder","bewertung":5,"grund":"Warum jetzt (max 65 Zeichen)","methode":"Führungsstil (max 50 Zeichen)"}]\n'
+    +'Genau 4 Einträge. Bewertung 1-5.'
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:prompt}]})});
+    const data=await r.json();
+    const txt=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    const clean=txt.replace(/```json|```/g,'').trim();
+    let spots;try{spots=JSON.parse(clean);}catch{const s=clean.indexOf('['),e=clean.lastIndexOf(']');spots=JSON.parse(clean.substring(s,e+1));}
+    renderHS(spots);
+  }catch(e){res.innerHTML=`<div style="padding:12px;background:rgba(192,80,58,.1);border:1px solid rgba(192,80,58,.2);border-radius:12px;font-size:12px;color:var(--text-sec);">Suche fehlgeschlagen.</div>`;}
+  btn.innerHTML='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Suchen';btn.style.pointerEvents='auto';
+}
+function renderHS(spots){
+  const res=document.getElementById('hs-results');
+  if(!spots||!spots.length){res.innerHTML='<div style="padding:12px;font-size:12px;color:var(--text-muted);">Keine Berichte gefunden.</div>';return;}
+  res.innerHTML=spots.map(s=>{
+    const col=s.score>=80?'var(--accent)':s.score>=60?'var(--accent-yellow)':'var(--accent-amber)';
+    const dot=s.score>=80?'#4fa86e':s.score>=60?'#c8a83a':'#d4854a';
+    return`<div class="hotspot-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;"><div style="display:flex;align-items:center;gap:7px;"><div style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0;margin-top:2px;"></div><div style="font-weight:500;font-size:13px;">${s.name}</div></div><span style="font-size:12px;font-weight:500;color:${col};flex-shrink:0;margin-left:8px;">${s.score}%</span></div><div style="font-size:12px;color:var(--text-sec);line-height:1.5;margin-bottom:5px;padding-left:14px;">${s.description}</div><div style="font-size:12px;color:var(--accent);margin-bottom:5px;padding-left:14px;">💡 ${s.tip}</div><div style="display:flex;justify-content:space-between;align-items:center;padding-left:14px;"><span style="font-size:10px;color:var(--text-muted);">Zielart: ${s.fish}</span><span style="font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(79,168,110,.1);color:var(--accent);">${s.source}</span></div></div>`;
+  }).join('');
+}
+
+// ── GEWÄSSER MODAL ────────────────────────────────────────────────────────
+const LOCS={neckar:{n:'Neckar – Esslingen',lat:48.744,lng:9.316},rhein:{n:'Rhein – Mannheim',lat:49.487,lng:8.466},donau:{n:'Donau – Ulm',lat:48.401,lng:9.987},bodensee:{n:'Bodensee – Konstanz',lat:47.663,lng:9.175},main:{n:'Main – Frankfurt',lat:50.110,lng:8.682}};
+
+function openWaterModal(){
+  const modal=document.getElementById('water-modal');
+  modal.classList.add('open');
+  const list=document.getElementById('water-preset-list');
+  list.innerHTML=Object.entries(LOCS).map(([k,v])=>`
+    <div class="water-preset-item ${cWater===v.n?'selected':''}" onclick="applyPresetWater('${k}')">
+      <span style="font-size:14px;color:${cWater===v.n?'var(--accent)':'var(--text-pri)'};">${v.n}</span>
+      ${cWater===v.n?'<span style="color:var(--accent);">✓</span>':'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>'}
+    </div>`).join('');
+  // Zeige custom Namen falls kein Preset
+  const isPreset=Object.values(LOCS).some(v=>v.n===cWater);
+  document.getElementById('custom-water-input').value=isPreset?'':cWater;
+}
+function closeWaterModal(){document.getElementById('water-modal').classList.remove('open');}
+function applyPresetWater(key){
+  const loc=LOCS[key];cWater=loc.n;cLat=loc.lat;cLng=loc.lng;
+  document.getElementById('gewaesser-select').value=key;
+  updateLocLabel();
+  if(lmap){lmap.setView([cLat,cLng],14);lmarker.setLatLng([cLat,cLng]);}
+  document.getElementById('hs-results').innerHTML='<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:12px;">Auf „Suchen" tippen für Hotspots.</div>';
+  refreshWeather();
+  closeWaterModal();
+}
+function applyCustomWater(){
+  const val=document.getElementById('custom-water-input').value.trim();
+  if(!val)return;
+  cWater=val;
+  updateLocLabel();
+  document.getElementById('hs-results').innerHTML='<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:12px;">Auf „Suchen" tippen für Hotspots.</div>';
+  closeWaterModal();
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────────────────
+function updateLocation(){
+  const v=document.getElementById('gewaesser-select').value,loc=LOCS[v];
+  cWater=loc.n;cLat=loc.lat;cLng=loc.lng;updateLocLabel();
+  if(lmap){lmap.setView([cLat,cLng],14);lmarker.setLatLng([cLat,cLng]);}
+  document.getElementById('hs-results').innerHTML='<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:12px;">Auf „Suchen" tippen für Hotspots.</div>';
+}
+function toggleSw(el){const t=el.querySelector('div'),on=el.style.background.includes('4fa86e')||el.style.background==='var(--accent)';if(on){el.style.background='var(--text-muted)';t.style.left='3px';t.style.right='auto';}else{el.style.background='var(--accent)';t.style.right='3px';t.style.left='auto';}}
+
+// ── WEATHER SCORING ───────────────────────────────────────────────────────
+const TEMP_MODS={Zander:[{max:9,m:.3},{max:13,m:.6},{max:20,m:1},{max:22,m:.6},{max:99,m:.2}],Hecht:[{max:3,m:.2},{max:9,m:.5},{max:18,m:1},{max:22,m:.65},{max:99,m:.3}],Barsch:[{max:7,m:.3},{max:14,m:.7},{max:22,m:1},{max:25,m:.7},{max:99,m:.35}],Forelle:[{max:3,m:.3},{max:7,m:.65},{max:16,m:1},{max:18,m:.55},{max:99,m:.1}]};
+function getTempMod(fish,t){for(const r of(TEMP_MODS[fish]||[]))if(t<=r.max)return r.m;return.5;}
+function getPressureMod(fish,trend){const m={Zander:{stable_high:1,stable_mid:.8,rising:.6,falling_slow:.5,falling_fast:.2,pre_storm:.4},Hecht:{stable_high:.85,stable_mid:1,rising:.75,falling_slow:.9,falling_fast:.3,pre_storm:1},Barsch:{stable_high:1,stable_mid:.85,rising:.6,falling_slow:.55,falling_fast:.2,pre_storm:.5},Forelle:{stable_high:.9,stable_mid:1,rising:.8,falling_slow:.85,falling_fast:.5,pre_storm:.7}};return(m[fish]||m.Zander)[trend]||.7;}
+function getCloudMod(fish,pct){if(fish==='Forelle')return pct>60?.95:.8;if(fish==='Zander')return pct>70?1:pct>40?.8:.5;return pct>50?.9:.75;}
+function getLightModNow(fish){const h=new Date().getHours();if(fish==='Zander'||fish==='Hecht'){if(h>=5&&h<=7||h>=18&&h<=21)return 1;if(h>=22||h<=4)return fish==='Zander'?.9:.5;return fish==='Zander'?.4:.7;}if(fish==='Barsch')return(h>=6&&h<=20)?.9:.35;return(h>=6&&h<=20)?.85:.4;}
+function calcRealScore(fish,season,apiData){const base=SEASON_BAITS[fish]?.[season]?.score??50;let mod=1.0;if(apiData.waterTemp!=null)mod*=getTempMod(fish,apiData.waterTemp);if(apiData.pressureTrend)mod*=getPressureMod(fish,apiData.pressureTrend);if(apiData.cloudcover!=null)mod*=getCloudMod(fish,apiData.cloudcover);mod*=getLightModNow(fish);return Math.min(100,Math.max(0,Math.round(base*mod)));}
+function detectPressureTrend(current,history3h){if(!history3h||history3h.length<2)return'stable_mid';const oldest=history3h[0],diff=current-oldest;if(diff>3)return'rising';if(diff<-5)return'falling_fast';if(diff<-2)return'falling_slow';if(current>=1018)return'stable_high';return'stable_mid';}
+function pressureTrendLabel(trend){return{stable_high:'Stabil hoch ↗',stable_mid:'Stabil',rising:'Steigend ↑',falling_slow:'Fallend ↓',falling_fast:'Stark fallend ↓↓',pre_storm:'Gewitterlage ⚡'}[trend]||'–';}
+function pressureTrendColor(trend){return{stable_high:'var(--accent)',stable_mid:'var(--text-sec)',rising:'var(--accent-yellow)',falling_slow:'var(--accent-amber)',falling_fast:'var(--accent-red)',pre_storm:'var(--accent-amber)'}[trend]||'var(--text-sec)';}
+function windDirLabel(deg){return['N','NO','O','SO','S','SW','W','NW'][Math.round(deg/45)%8];}
+
+let apiData={waterTemp:null,waterLevel:null,waterTempHistory:[],waterTempTrend:null,pressureTrend:'stable_mid',cloudcover:null,windSpeed:null,windDir:null,airTemp:null,stationName:null};
+let weatherFetching=false;
+
+async function fetchOpenMeteo(lat,lng){
+  // Open-Meteo - current_weather endpoint (stabiler als current)
+  try{
+    const la=parseFloat(lat), lo=parseFloat(lng);
+    if(isNaN(la)||isNaN(lo)) return null;
+    const url='https://api.open-meteo.com/v1/forecast'
+      +'?latitude='+la.toFixed(4)+'&longitude='+lo.toFixed(4)
+      +'&current_weather=true'
+      +'&hourly=surface_pressure,cloudcover,windspeed_10m,temperature_2m'
+      +'&forecast_days=1&timezone=auto';
+    const r=await fetch(url);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    const cw=d.current_weather||{};
+    const h=d.hourly||{};
+    // Aktuelle Stunde berechnen
+    const nowISO=new Date().toISOString().slice(0,13);
+    const times=h.time||[];
+    let idx=times.findIndex(function(t){return t.startsWith(nowISO);});
+    if(idx<0) idx=0;
+    const pres  = h.surface_pressure ? h.surface_pressure[idx] : null;
+    const cloud = h.cloudcover       ? h.cloudcover[idx]       : null;
+    const temp  = h.temperature_2m   ? h.temperature_2m[idx]   : null;
+    const wind  = cw.windspeed       != null ? cw.windspeed     : (h.windspeed_10m ? h.windspeed_10m[idx] : null);
+    const wdir  = cw.winddirection   != null ? cw.winddirection : null;
+    const pressHist = h.surface_pressure ? h.surface_pressure.slice(Math.max(0,idx-3),idx+1) : [];
+    return{
+      airTemp:      temp  != null ? Math.round(temp)  : null,
+      pressure:     pres  != null ? Math.round(pres)  : null,
+      pressureTrend: detectPressureTrend(pres, pressHist),
+      windSpeed:    wind  != null ? Math.round(wind)  : null,
+      windDir:      wdir,
+      cloudcover:   cloud != null ? Math.round(cloud) : null
+    };
+  }catch(e){ console.warn('OpenMeteo:', e.message); }
+
+  // Fallback: wttr.in (kein API-Key, zuverlässig)
+  try{
+    const la=parseFloat(lat), lo=parseFloat(lng);
+    const url='https://wttr.in/'+la.toFixed(2)+','+lo.toFixed(2)+'?format=j1';
+    const r=await fetch(url);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    const cc=d.current_condition&&d.current_condition[0]||{};
+    const temp2=parseFloat(cc.temp_C);
+    const wind2=parseFloat(cc.windspeedKmph);
+    const cloud2=parseFloat(cc.cloudcover);
+    const pressure2=parseFloat(cc.pressure);
+    const wdir2=parseFloat(cc.winddirDegree);
+    return{
+      airTemp:      !isNaN(temp2)     ? Math.round(temp2)     : null,
+      pressure:     !isNaN(pressure2) ? Math.round(pressure2) : null,
+      pressureTrend: 'stable_mid',
+      windSpeed:    !isNaN(wind2)     ? Math.round(wind2)     : null,
+      windDir:      !isNaN(wdir2)     ? wdir2                 : null,
+      cloudcover:   !isNaN(cloud2)    ? Math.round(cloud2)    : null
+    };
+  }catch(e){ console.warn('wttr.in:', e.message); }
+
+  return null;
+}
+async function fetchPegelOnline(lat,lng){
+  const la=parseFloat(lat),lo=parseFloat(lng),delta=0.6,bbox=(lo-delta).toFixed(4)+','+(la-delta).toFixed(4)+','+(lo+delta).toFixed(4)+','+(la+delta).toFixed(4);
+  try{
+    const url='https://pegelonline.wsv.de/webservices/rest-api/v2/stations.json?includeTimeseries=true&bbox='+bbox;
+    const r=await fetch(url);const stations=await r.json();
+    if(!stations||!stations.length)return null;
+    let best=null,bestDist=999;
+    for(const st of stations){const hasWT=st.timeseries?.some(t=>t.shortname==='WT'),hasW=st.timeseries?.some(t=>t.shortname==='W');if(!hasWT&&!hasW)continue;const dist=Math.hypot(st.latitude-lat,st.longitude-lng);if(dist<bestDist){bestDist=dist;best={...st,hasWT,hasW};}}
+    if(!best)return null;
+    const result={name:best.longname,uuid:best.uuid};
+    if(best.hasWT){try{const wr=await fetch('https://pegelonline.wsv.de/webservices/rest-api/v2/stations/'+best.uuid+'/WT/currentmeasurement.json');const wt=await wr.json();result.waterTemp=wt.value!=null?Math.round(wt.value*10)/10:null;}catch(e){result.waterTemp=null;}}
+    if(best.hasW){try{const lr=await fetch('https://pegelonline.wsv.de/webservices/rest-api/v2/stations/'+best.uuid+'/W/currentmeasurement.json');const wl=await lr.json();result.waterLevel=wl.value!=null?Math.round(wl.value):null;result.waterLevelUnit=wl.unit||'cm';}catch(e){result.waterLevel=null;}}
+    // 7-Tage Wassertemperatur-Verlauf
+    if(best.hasWT){
+      try{
+        const now=new Date();
+        const from=new Date(now-7*24*3600*1000).toISOString().slice(0,19)+'+01:00';
+        const histUrl='https://pegelonline.wsv.de/webservices/rest-api/v2/stations/'+best.uuid+'/WT/measurements.json?start='+encodeURIComponent(from)+'&end='+encodeURIComponent(now.toISOString().slice(0,19)+'+01:00');
+        const hr=await fetch(histUrl);
+        if(hr.ok){
+          const hist=await hr.json();
+          if(hist&&hist.length>0){
+            // Täglich einen Wert sampeln (alle ~24 Werte = 1 Tag bei stündlichen Daten)
+            const step=Math.max(1,Math.floor(hist.length/7));
+            result.waterTempHistory=[];
+            for(let i=0;i<hist.length;i+=step){
+              if(result.waterTempHistory.length>=7) break;
+              const v=hist[i];
+              if(v&&v.value!=null) result.waterTempHistory.push({
+                date: v.timestamp ? v.timestamp.slice(0,10) : '',
+                temp: Math.round(v.value*10)/10
+              });
+            }
+            // Trend berechnen: letzter - erster Wert
+            if(result.waterTempHistory.length>=2){
+              const diff=result.waterTempHistory[result.waterTempHistory.length-1].temp - result.waterTempHistory[0].temp;
+              result.waterTempTrend= diff>0.5?'steigend':diff<-0.5?'fallend':'stabil';
+              result.waterTempDiff = Math.round(diff*10)/10;
+            }
+          }
+        }
+      }catch(e){ /* Historie nicht verfügbar */ }
+    }
+    return result;
+  }catch(e){return null;}
+}
+
+async function refreshWeather(){
+  if(weatherFetching) return;
+  weatherFetching=true;
+  const dot=document.getElementById('w-status');
+  const upd=document.getElementById('w-updated');
+  if(dot) dot.style.background='#c8a83a';
+  if(upd) upd.textContent='lädt…';
+  try{
+    const [wRes, pRes] = await Promise.allSettled([
+      fetchOpenMeteo(cLat, cLng),
+      fetchPegelOnline(cLat, cLng)
+    ]);
+
+    const w=wRes.status==='fulfilled' ? wRes.value : null;
+    const p=pRes.status==='fulfilled' ? pRes.value : null;
+
+    if(w){
+      if(w.airTemp     !=null) apiData.airTemp    =w.airTemp;
+      if(w.pressure    !=null) apiData.pressure   =w.pressure;
+      if(w.pressureTrend)      apiData.pressureTrend=w.pressureTrend;
+      if(w.windSpeed   !=null) apiData.windSpeed  =w.windSpeed;
+      if(w.windDir     !=null) apiData.windDir    =w.windDir;
+      if(w.cloudcover  !=null) apiData.cloudcover =w.cloudcover;
+      if(dot) dot.style.background='#4fa86e';
+    } else {
+      if(dot) dot.style.background='#c0503a';
+    }
+    if(p){
+      if(p.waterTemp       !=null) apiData.waterTemp        =p.waterTemp;
+      if(p.waterLevel      !=null) apiData.waterLevel       =p.waterLevel;
+      if(p.name)                   apiData.stationName      =p.name;
+      if(p.waterTempHistory&&p.waterTempHistory.length)
+                                   apiData.waterTempHistory =p.waterTempHistory;
+      if(p.waterTempTrend)         apiData.waterTempTrend   =p.waterTempTrend;
+      if(p.waterTempDiff  !=null)  apiData.waterTempDiff    =p.waterTempDiff;
+    }
+
+    updateWeatherUI();
+    updateHomeScore();
+    const now=new Date();
+    if(upd) upd.textContent=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  } catch(e){
+    console.warn('refreshWeather:', e.message);
+    if(dot) dot.style.background='#c0503a';
+    if(upd) upd.textContent='Fehler';
+    updateWeatherUI();
+  } finally {
+    weatherFetching=false;
+  }
+}
+function updateWeatherUI(){
+  const trend=apiData.pressureTrend;
+  const pressure=document.getElementById('w-pressure'),pressureTrend=document.getElementById('w-pressure-trend');
+  if(pressure)pressure.textContent=apiData.pressure?apiData.pressure+' hPa':'–';
+  if(pressureTrend){pressureTrend.textContent=pressureTrendLabel(trend);pressureTrend.style.color=pressureTrendColor(trend);}
+  const wind=document.getElementById('w-wind'),windDir=document.getElementById('w-wind-dir');
+  if(wind)wind.textContent=apiData.windSpeed!=null?apiData.windSpeed:'–';
+  if(windDir)windDir.textContent=apiData.windDir!=null?`${windDirLabel(apiData.windDir)} km/h`:'km/h';
+  const water=document.getElementById('w-water'),waterSub=document.getElementById('w-water-sub');
+  if(water)water.textContent=apiData.waterTemp!=null?apiData.waterTemp:(apiData.waterLevel!=null?apiData.waterLevel:'–');
+  if(waterSub){if(apiData.waterTemp!=null)waterSub.textContent='°C Wasser';else if(apiData.waterLevel!=null)waterSub.textContent='cm Pegel';else waterSub.textContent='keine Daten';}
+  const cloud=document.getElementById('w-cloud');if(cloud)cloud.textContent=apiData.cloudcover!=null?Math.round(apiData.cloudcover):'–';
+  const station=document.getElementById('w-station');if(station)station.textContent=apiData.stationName?'Pegel: '+apiData.stationName:'Kein Pegel in der Nähe';
+  // Wassertemperatur 7-Tage Verlauf rendern
+  const histWrap=document.getElementById('w-temp-history-wrap');
+  const histBars=document.getElementById('w-temp-bars');
+  const histLabels=document.getElementById('w-temp-labels');
+  const trendBadge=document.getElementById('w-temp-trend-badge');
+  if(histWrap&&apiData.waterTempHistory&&apiData.waterTempHistory.length>=2){
+    histWrap.style.display='block';
+    const hist=apiData.waterTempHistory;
+    const temps=hist.map(function(d){return d.temp;});
+    const minT=Math.min.apply(null,temps);
+    const maxT=Math.max.apply(null,temps);
+    const rangeT=maxT-minT||0.5;
+    histBars.innerHTML=hist.map(function(d,i){
+      const pct=Math.round(((d.temp-minT)/rangeT)*100);
+      const h=Math.max(4,Math.round(pct*0.32)+4);
+      const isLast=i===hist.length-1;
+      const col=isLast?'var(--accent)':'rgba(79,168,110,.4)';
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;">'
+        +'<div style="font-size:8px;color:var(--text-muted);margin-bottom:1px;">'+d.temp+'°</div>'
+        +'<div style="width:100%;background:'+col+';border-radius:2px 2px 0 0;height:'+h+'px;"></div>'
+        +'</div>';
+    }).join('');
+    const days=['So','Mo','Di','Mi','Do','Fr','Sa'];
+    histLabels.innerHTML=hist.map(function(d){
+      const day=d.date?days[new Date(d.date+'T12:00:00').getDay()]:'';
+      return '<div style="flex:1;text-align:center;font-size:8px;color:var(--text-muted);">'+day+'</div>';
+    }).join('');
+    if(trendBadge&&apiData.waterTempTrend){
+      const col=apiData.waterTempTrend==='steigend'?'#c8a83a':apiData.waterTempTrend==='fallend'?'#3a9898':'var(--text-sec)';
+      const arrow=apiData.waterTempTrend==='steigend'?'↑':apiData.waterTempTrend==='fallend'?'↓':'→';
+      const diff=apiData.waterTempDiff!=null?(apiData.waterTempDiff>0?'+':'')+apiData.waterTempDiff+'°C ':'';
+      trendBadge.innerHTML='<span style="color:'+col+';">'+diff+apiData.waterTempTrend+' '+arrow+'</span>';
+    }
+  } else if(histWrap){
+    histWrap.style.display='none';
+  }
+  const chipTemp=document.getElementById('chip-temp'),chipPressure=document.getElementById('chip-pressure'),chipTime=document.getElementById('chip-time');
+  if(chipTemp){const t=apiData.waterTemp??apiData.airTemp;chipTemp.textContent=t!=null?`🌡 ${t}°C ${apiData.waterTemp!=null?'Wasser':'Luft'}`:'🌡 –°C';}
+  if(chipPressure)chipPressure.textContent=`📊 ${pressureTrendLabel(trend)}`;
+  if(chipTime){const h=new Date().getHours();const lbl=h>=5&&h<=7?'Morgendämmerung':h>=18&&h<=21?'Abenddämmerung':h>=22||h<=4?'Nacht':'Tag';chipTime.textContent=`🌤 ${lbl}`;}
+}
+
+function updateHomeScore(){
+  const score=calcRealScore(cFish,cSeason,apiData);const col=scoreColor(score);
+  document.getElementById('score-big').innerHTML=score+'<span style="font-size:22px;color:var(--text-sec);">%</span>';
+  document.getElementById('score-arc').style.stroke=col;
+  document.getElementById('score-arc').setAttribute('stroke-dashoffset',scoreArc(score));
+  const lbl=document.getElementById('score-label');lbl.textContent=scoreLabel(score);lbl.style.background=col+'22';lbl.style.color=col;
+  const sd=SEASON_BAITS[cFish]?.[cSeason];
+  document.getElementById('score-depth').textContent=sd?.dep||FD_BASE[cFish].depth;
+  document.getElementById('score-struct').textContent=sd?.str||FD_BASE[cFish].struct;
+  const top=getTopBaits(cFish,cSeason);
+  if(top[0]){document.getElementById('top-bait-1').textContent=top[0].n;document.getElementById('top-bait-1-detail').textContent=top[0].de;document.getElementById('home-lure-1').innerHTML=IC[top[0].ic]||'';}
+  if(top[1]){document.getElementById('top-bait-2').textContent=top[1].n;document.getElementById('top-bait-2-detail').textContent=top[1].de;document.getElementById('home-lure-2').innerHTML=IC[top[1].ic]||'';}
+  const badge=document.getElementById('bait-score-badge');
+  const s=calcRealScore(cFish,cSeason,apiData);
+  if(badge){badge.textContent=scoreLabel(s)+' ('+s+'%)';badge.style.background=scoreColor(s)+'22';badge.style.color=scoreColor(s);}
+}
+
+// ── KI KÖDEREMPFEHLUNG ────────────────────────────────────────────────────
+// ── LOKALE KI-EMPFEHLUNG (kein API-Call, kein CORS, immer zuverlässig) ────
+function getKIRecommendation(){
+  const btn     = document.getElementById('ki-btn');
+  const loading = document.getElementById('ki-loading');
+  const errBox  = document.getElementById('ki-error');
+  const results = document.getElementById('ki-results');
+  if(!btn || btn.disabled) return;
+
+  btn.disabled = true;
+  btn.style.opacity = '.5';
+  loading.style.display = 'block';
+  errBox.style.display  = 'none';
+  results.style.display = 'none';
+
+  try{
+    const baits = computeSmartBaits(cFish, cSeason, apiData);
+    const list  = document.getElementById('ki-bait-list');
+    list.innerHTML = baits.map(function(b, i){
+      const stars = [1,2,3,4,5].map(function(n){
+        return '<span style="color:'+(n<=b.bewertung?'#c8a83a':'#1f4530')+'">★</span>';
+      }).join('');
+      return '<div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:14px;padding:13px 14px;margin-bottom:8px;">'
+        +'<div style="display:flex;align-items:center;gap:9px;margin-bottom:5px;">'
+        +'<div style="width:26px;height:26px;border-radius:8px;background:rgba(79,168,110,.18);color:var(--accent);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">#'+(i+1)+'</div>'
+        +'<div style="font-size:14px;font-weight:600;flex:1;">'+b.name+'</div>'
+        +'<div style="font-size:10px;background:var(--bg-input);color:var(--text-muted);padding:2px 8px;border-radius:8px;white-space:nowrap;">'+b.typ+'</div>'
+        +'</div>'
+        +'<div style="margin-bottom:5px;font-size:14px;">'+stars+'</div>'
+        +'<div style="font-size:12px;color:var(--text-sec);margin-bottom:'+(b.methode?'5px':'0')+';">'+b.grund+'</div>'
+        +(b.methode?'<div style="font-size:11px;color:var(--accent-water);"><span style="background:rgba(58,152,152,.12);padding:2px 8px;border-radius:7px;">▶ '+b.methode+'</span></div>':'')
+        +'</div>';
+    }).join('');
+    results.style.display = 'block';
+  } catch(e){
+    errBox.textContent = 'Fehler: '+e.message;
+    errBox.style.display = 'block';
+  } finally {
+    loading.style.display = 'none';
+    btn.disabled    = false;
+    btn.style.opacity = '1';
+  }
+}
+
+// ── SMART EMPFEHLUNGS-ENGINE ─────────────────────────────────────────────
+function computeSmartBaits(fish, season, w){
+  // Wetterbedingungen auswerten
+  const temp      = w.waterTemp  != null ? w.waterTemp  : w.airTemp;
+  const tempTrend = w.waterTempTrend || null;  // 'steigend','fallend','stabil'
+  const tempRising  = tempTrend === 'steigend';
+  const tempFalling = tempTrend === 'fallend';
+  const pressure  = w.pressure   || 1013;
+  const trend     = w.pressureTrend || 'stable_mid';
+  const cloud     = w.cloudcover != null ? w.cloudcover : 50;
+  const wind      = w.windSpeed  != null ? w.windSpeed  : 10;
+  const hour      = new Date().getHours();
+
+  // Aktivitäts-Score 0-100 berechnen
+  const falling   = trend==='falling_fast'||trend==='falling_slow';
+  const rising    = trend==='rising';
+  const stable    = trend==='stable_high'||trend==='stable_mid';
+  const dawn      = (hour>=5&&hour<=8)||(hour>=18&&hour<=21);
+  const night     = hour<5||hour>21;
+  const overcast  = cloud>65;
+  const coldWater = temp!=null && temp<8;
+  const warmWater = temp!=null && temp>16;
+
+  // Alle möglichen Köder für diese Fischart + Jahreszeit holen
+  const pool = BAIT_POOL[fish] || BAIT_POOL['Zander'];
+  const seasonal = pool[season] || pool['Herbst'];
+
+  // Jeden Köder mit Wetterbonus bewerten
+  const scored = seasonal.map(function(b){
+    let score = b.base;
+
+    // Druckbonus
+    if(b.tags.indexOf('aktiv')>=0  && stable)  score += 15;
+    if(b.tags.indexOf('aktiv')>=0  && falling) score -= 20;
+    if(b.tags.indexOf('passiv')>=0 && falling) score += 18;
+    if(b.tags.indexOf('passiv')>=0 && stable)  score -= 5;
+
+    // Temperaturbonus
+    if(b.tags.indexOf('kalt')>=0   && coldWater) score += 12;
+    if(b.tags.indexOf('warm')>=0   && warmWater) score += 10;
+    if(b.tags.indexOf('kalt')>=0   && warmWater) score -= 10;
+
+    // Lichtbonus
+    if(b.tags.indexOf('nacht')>=0  && (night||dawn))  score += 15;
+    if(b.tags.indexOf('nacht')>=0  && !night && !dawn) score -= 10;
+    if(b.tags.indexOf('tag')>=0    && !night)   score += 5;
+
+    // Bewölkungsbonus
+    if(b.tags.indexOf('trüb')>=0   && overcast)  score += 10;
+    if(b.tags.indexOf('trüb')>=0   && !overcast) score -= 5;
+
+    // Windbonus
+    if(b.tags.indexOf('windstill')>=0 && wind<8)  score += 8;
+    if(b.tags.indexOf('windig')>=0    && wind>15) score += 8;
+
+    // Wassertemperatur-Trend Bonus
+    if(tempRising  && b.tags.indexOf('aktiv')>=0)  score += 10; // Wärmer = aktiver
+    if(tempFalling && b.tags.indexOf('passiv')>=0) score += 10; // Kälter = passiver
+    if(tempFalling && b.tags.indexOf('kalt')>=0)   score += 8;  // Kalt-Köder bevorzugen
+
+    return Object.assign({}, b, {finalScore: score});
+  });
+
+  // Top 4 sortieren
+  scored.sort(function(a,b){ return b.finalScore - a.finalScore; });
+  const top4 = scored.slice(0,4);
+
+  // Bewertung 1-5 normalisieren
+  const maxS = top4[0].finalScore;
+  const minS = top4[3].finalScore;
+  const range = maxS - minS || 1;
+
+  return top4.map(function(b, i){
+    const stars = Math.max(2, Math.min(5, Math.round(5 - (i * 0.8))));
+
+    // Dynamische Begründung
+    let grund = b.grundBase;
+    if(falling && b.tags.indexOf('passiv')>=0)  grund += ' – fallender Druck ideal';
+    else if(stable && b.tags.indexOf('aktiv')>=0) grund += ' – stabiler Druck aktiv';
+    if(coldWater && b.tags.indexOf('kalt')>=0)   grund += ' – kaltes Wasser passt';
+    if(dawn        && b.tags.indexOf('nacht')>=0)  grund += ' – Dämmerung optimal';
+    if(tempRising  && b.tags.indexOf('aktiv')>=0)  grund += ' – Wasser wärmer, Fische aktiver';
+    if(tempFalling && b.tags.indexOf('passiv')>=0) grund += ' – Abkühltrend, passiver Köder';
+
+    return {
+      name:      b.name,
+      typ:       b.typ,
+      bewertung: stars,
+      grund:     grund.slice(0, 65),
+      methode:   b.methode
+    };
+  });
+}
+
+// ── KÖDER-POOL ───────────────────────────────────────────────────────────
+const BAIT_POOL = {
+  Zander: {
+    Frühling: [
+      {name:'Action Shad mittel', typ:'Softbait', base:80, tags:['aktiv','tag'], grundBase:'Vorlaich-Fresswut, Paddeltail stark', methode:'Jiggen mit Bodenkontakt'},
+      {name:'Suspending Wobbler', typ:'Hardbait', base:75, tags:['aktiv','trüb'], grundBase:'Stop-and-Go lockt aktive Zander', methode:'Pause an Struktur'},
+      {name:'Low-Action Shad',    typ:'Softbait', base:65, tags:['passiv','kalt'], grundBase:'Schlanke Form für vorsichtige Fische', methode:'Schleichen, 10s Pause'},
+      {name:'Dropshot Rig',       typ:'Rig',      base:60, tags:['passiv','kalt'], grundBase:'Exakt in Maulhöhe präsentieren', methode:'Stationär zittern'},
+      {name:'Köderfisch',         typ:'Livebait', base:70, tags:['aktiv','trüb'], grundBase:'Natürliche Beute, hohe Erfolgsquote', methode:'Vor Struktur ansitzen'},
+    ],
+    Sommer: [
+      {name:'Action Shad groß',   typ:'Softbait', base:65, tags:['nacht','aktiv'], grundBase:'Nachts an Brückenpfeilern top', methode:'Bodennah bei Dämmerung'},
+      {name:'Dropshot fein',      typ:'Rig',      base:70, tags:['nacht','passiv'], grundBase:'Stationär nachts am besten', methode:'Vor Anker, kaum Bewegung'},
+      {name:'Gummifisch 7cm',     typ:'Softbait', base:60, tags:['passiv','tag'], grundBase:'Tagsüber an tiefen Strukturen', methode:'Sehr langsam, tiefe Kante'},
+      {name:'Blade Bait',         typ:'Hardbait', base:55, tags:['aktiv','nacht'], grundBase:'Vibration zieht nachts Zander', methode:'Vertikal jigging'},
+      {name:'Köderfisch',         typ:'Livebait', base:68, tags:['nacht','aktiv'], grundBase:'Abends vor tiefen Strukturen', methode:'Grundmontage, Geduld'},
+    ],
+    Herbst: [
+      {name:'Action Shad 15cm',   typ:'Softbait', base:85, tags:['aktiv','trüb'], grundBase:'Hauptsaison – Fettfrass', methode:'Rucken, Pause, Boden'},
+      {name:'Großer Wobbler',     typ:'Hardbait', base:78, tags:['aktiv','tag'], grundBase:'Tiefläufer über Strukturkante', methode:'Stop-and-Go langsam'},
+      {name:'Blade Bait',         typ:'Hardbait', base:72, tags:['aktiv','windig'], grundBase:'Vibration lockt Zander weit', methode:'Vertikal über Steinschüttung'},
+      {name:'Köderfisch',         typ:'Livebait', base:80, tags:['aktiv','trüb'], grundBase:'Höchste Erfolgsquote Oktober', methode:'Pose vor Buhne'},
+      {name:'Low-Action Shad',    typ:'Softbait', base:60, tags:['passiv','kalt'], grundBase:'Bei Druckabfall ruhiger führen', methode:'Schleichen, lange Pause'},
+    ],
+    Winter: [
+      {name:'Low-Action Shad 9cm', typ:'Softbait', base:82, tags:['passiv','kalt'], grundBase:'Pausen bis 20s – Winterschlüssel', methode:'Bodennah schleichen'},
+      {name:'Dropshot Rig',        typ:'Rig',      base:78, tags:['passiv','kalt'], grundBase:'Exakt in Maulhöhe – passiv ideal', methode:'Stationär minimal zittern'},
+      {name:'Blade Bait mini',     typ:'Hardbait', base:65, tags:['passiv','kalt'], grundBase:'Kurze Hüpfer über Fahrrinne', methode:'Vertikal vom Boot'},
+      {name:'Köderfisch klein',    typ:'Livebait', base:70, tags:['passiv','kalt'], grundBase:'Stundenlanger Ansitz lohnt', methode:'Grundmontage, keine Bewegung'},
+      {name:'Gummifisch 5cm',      typ:'Softbait', base:60, tags:['passiv','kalt'], grundBase:'Kleiner Köder für passive Fische', methode:'Micro-Jigging fein'},
+    ]
+  },
+  Hecht: {
+    Frühling: [
+      {name:'Spinnerbait',         typ:'Hardbait', base:85, tags:['aktiv','tag'], grundBase:'Nachlaich-Fresswut im Schilf', methode:'Durch Kraut gleichmäßig'},
+      {name:'Gummifisch Texas',    typ:'Softbait', base:78, tags:['aktiv','warm'], grundBase:'Weedless durch dichte Deckung', methode:'Langsam gleiten lassen'},
+      {name:'Jerkbait',            typ:'Hardbait', base:72, tags:['aktiv','trüb'], grundBase:'Twitching reißt Hecht aus Deckung', methode:'Ruck-Ruck-Pause'},
+      {name:'Chatterbait',         typ:'Hardbait', base:68, tags:['aktiv','windig'], grundBase:'Vibration entlang Krautkanten', methode:'Mittelschnell, stoppen'},
+      {name:'Köderfisch groß',     typ:'Livebait', base:75, tags:['aktiv','trüb'], grundBase:'Ausgehungerte Weibchen greifen', methode:'Vor Einlauf positionieren'},
+    ],
+    Sommer: [
+      {name:'Popper Oberfläche',   typ:'Surface',  base:82, tags:['aktiv','tag','tag'], grundBase:'Morgens spektakulär an Seerosen', methode:'Gurren, lange Pause'},
+      {name:'Hollow Frog',         typ:'Softbait', base:78, tags:['aktiv','warm'], grundBase:'Direkt über Seerosenfelder', methode:'Über Kraut ziehen'},
+      {name:'Action Shad groß',    typ:'Softbait', base:65, tags:['tag','aktiv'], grundBase:'Entlang Krautkante gleichmäßig', methode:'Steady Retrieve'},
+      {name:'Jerkbait',            typ:'Hardbait', base:60, tags:['aktiv','nacht'], grundBase:'Früh morgens an Deckung', methode:'Langsames Twitching'},
+      {name:'Spinnerbait',         typ:'Hardbait', base:70, tags:['aktiv','warm'], grundBase:'Außenkanten bei Überhängen', methode:'Mittelschnell'},
+    ],
+    Herbst: [
+      {name:'Jerkbait 18cm',       typ:'Hardbait', base:88, tags:['aktiv','trüb'], grundBase:'Herbst ist Jerkbait-Saison!', methode:'Abrupt zucken, Pause'},
+      {name:'Großer Shad 25cm',    typ:'Softbait', base:80, tags:['aktiv','windig'], grundBase:'Fettfrass: großer Köder wirkt', methode:'Steady Retrieve Mittelwasser'},
+      {name:'Bucktail-Jig',        typ:'Hardbait', base:72, tags:['aktiv','tag'], grundBase:'Pulsierendes Haar imitiert Beute', methode:'Gleichmäßig mit Stopps'},
+      {name:'Köderfisch 15cm',     typ:'Livebait', base:82, tags:['aktiv','trüb'], grundBase:'Größte Hechte im Herbst', methode:'Vor Buhne ansitzen'},
+      {name:'Suspending Wobbler',  typ:'Hardbait', base:68, tags:['passiv','kalt'], grundBase:'Bei Druckabfall langsam führen', methode:'Minutenlanges Stehen'},
+    ],
+    Winter: [
+      {name:'Low-Action Shad groß', typ:'Softbait', base:75, tags:['passiv','kalt'], grundBase:'Hecht frisst alle 7-10 Tage', methode:'Sehr langsam schleichen'},
+      {name:'Suspending Wobbler',   typ:'Hardbait', base:72, tags:['passiv','kalt'], grundBase:'Stehen lassen lockt Winterhecht', methode:'Minuten stehen lassen'},
+      {name:'Köderfisch Ansitz',    typ:'Livebait', base:78, tags:['passiv','kalt'], grundBase:'Geduld – stundenlanger Ansitz', methode:'Grundmontage reglos'},
+      {name:'Gummifisch 14cm',      typ:'Softbait', base:60, tags:['passiv','kalt'], grundBase:'Sanft an Südufern führen', methode:'Kaum Bewegung, Boden'},
+      {name:'Pilker vertikal',      typ:'Hardbait', base:62, tags:['passiv','windstill'], grundBase:'Vertikal vom Boot über Kolk', methode:'Kurze Hüpfer, 15s Pause'},
+    ]
+  },
+  Barsch: {
+    Frühling: [
+      {name:'Kleiner Action Shad', typ:'Softbait', base:78, tags:['aktiv','tag'], grundBase:'Schwarm nach Laich aktiv', methode:'Jiggen entlang Stein'},
+      {name:'Inline-Spinner',      typ:'Hardbait', base:75, tags:['aktiv','tag'], grundBase:'Klassikerführung provoziert', methode:'Mittelschnell gleichmäßig'},
+      {name:'Ned Rig',             typ:'Rig',      base:68, tags:['passiv','kalt'], grundBase:'Auch passive Barsche greifen', methode:'Minimal wackeln am Grund'},
+      {name:'Dropshot 6cm',        typ:'Rig',      base:65, tags:['passiv','kalt'], grundBase:'Finesse bei trägen Fischen', methode:'Vor Struktur stationär'},
+      {name:'Gummitier 5cm',       typ:'Softbait', base:60, tags:['kalt','passiv'], grundBase:'Klein und langsam im Frühjahr', methode:'Hopser über Steingrund'},
+    ],
+    Sommer: [
+      {name:'Action Shad 7cm',     typ:'Softbait', base:88, tags:['aktiv','tag'], grundBase:'Top-Saison! Schwärme sichtbar', methode:'Schnell entlang Kante'},
+      {name:'Ned Rig',             typ:'Rig',      base:78, tags:['aktiv','warm'], grundBase:'Auch tagaktiv im Sommer top', methode:'Wackeln am Grund'},
+      {name:'Inline-Spinner',      typ:'Hardbait', base:80, tags:['aktiv','tag'], grundBase:'Sichtjagd: Spinner sofort rein!', methode:'Durch sichtbaren Schwarm'},
+      {name:'Micro Popper',        typ:'Surface',  base:72, tags:['aktiv','nacht'], grundBase:'Morgens Oberfläche spektakulär', methode:'Zucken mit Pause'},
+      {name:'Dropshot fein',       typ:'Rig',      base:65, tags:['passiv','trüb'], grundBase:'Nachts an Strukturen', methode:'Stationär stehen lassen'},
+    ],
+    Herbst: [
+      {name:'Mittelgroßer Shad',   typ:'Softbait', base:80, tags:['aktiv','trüb'], grundBase:'Schwärme ziehen tiefer – top!', methode:'Jigging Strukturkante'},
+      {name:'Dropshot Struktur',   typ:'Rig',      base:76, tags:['aktiv','tag'], grundBase:'Exakte Tiefe trifft Schwarm', methode:'Vor Stein minimal zittern'},
+      {name:'Blade Bait klein',    typ:'Hardbait', base:70, tags:['aktiv','windig'], grundBase:'Vertikal über Echolot-Schwarm', methode:'Kurze Hüpfer oben drüber'},
+      {name:'Inline-Spinner',      typ:'Hardbait', base:68, tags:['aktiv','tag'], grundBase:'Immer noch verlässlich', methode:'Gleichmäßig über Kante'},
+      {name:'Low-Action Shad 5cm', typ:'Softbait', base:62, tags:['passiv','kalt'], grundBase:'Bei Kälte kleiner und langsamer', methode:'Schleichen, Pause 8s'},
+    ],
+    Winter: [
+      {name:'Micro-Jig 3cm',       typ:'Finesse',  base:82, tags:['passiv','kalt'], grundBase:'Winterschlüssel Micro-Jigging', methode:'Fein zittern am Grund'},
+      {name:'Low-Action Shad 4cm', typ:'Softbait', base:76, tags:['passiv','kalt'], grundBase:'Klein + langsam = Biss im Winter', methode:'Schleichen, 10s Pause'},
+      {name:'Blade Bait mini',     typ:'Hardbait', base:65, tags:['passiv','kalt'], grundBase:'Vertikal über Tiefstruktur', methode:'Hüpfer + lange Pause'},
+      {name:'Dropshot mini',       typ:'Rig',      base:70, tags:['passiv','kalt'], grundBase:'Exakt in Maulhöhe – fein', methode:'Kaum Bewegung'},
+      {name:'Ned Rig mini',        typ:'Rig',      base:60, tags:['passiv','windstill'], grundBase:'Stehend am Grund im Kolk', methode:'Minimal wackeln'},
+    ]
+  },
+  Forelle: {
+    Frühling: [
+      {name:'Trockenfliege CDC',   typ:'Fliegenfischen', base:90, tags:['aktiv','tag'], grundBase:'Hatch-Saison! Steigende Fische', methode:'Drag-free drift'},
+      {name:'Emerger Parachute',   typ:'Fliegenfischen', base:82, tags:['aktiv','trüb'], grundBase:'Im Oberflächenfilm oft besser', methode:'Zucken wenn kein Biss'},
+      {name:'Tungsten-Nymphe',     typ:'Fliegenfischen', base:78, tags:['kalt','passiv'], grundBase:'Tief wenn kein Hatch sichtbar', methode:'Euro-Nymphing tief'},
+      {name:'Inline-Spinner 4g',   typ:'Hardbait', base:68, tags:['aktiv','tag'], grundBase:'Verlässlich bei aktiven Forellen', methode:'Mittelschnell diagonal'},
+      {name:'Löffel rotgold',      typ:'Hardbait', base:65, tags:['aktiv','trüb'], grundBase:'Blitz lockt bei trübem Wasser', methode:'Langsam taumeln'},
+    ],
+    Sommer: [
+      {name:'Abend-Trockenfliege', typ:'Fliegenfischen', base:88, tags:['nacht','aktiv'], grundBase:'Sedge-Hatch abends spektakulär', methode:'Drag-free Abenddämmerung'},
+      {name:'Terrestrial Grashüpfer', typ:'Fliegenfischen', base:82, tags:['aktiv','warm'], grundBase:'Landinsekten fallen ins Wasser', methode:'Unter Äste werfen'},
+      {name:'Nymphe tief',         typ:'Fliegenfischen', base:72, tags:['passiv','tag'], grundBase:'Mittags tief in Kolken', methode:'Schwer, kaum Bewegung'},
+      {name:'Inline-Spinner 3g',   typ:'Hardbait', base:65, tags:['aktiv','nacht'], grundBase:'Morgens + abends zuverlässig', methode:'Quer zur Strömung'},
+      {name:'Mini-Wobbler',        typ:'Hardbait', base:60, tags:['aktiv','trüb'], grundBase:'An schattigen Ufern wirksam', methode:'Langsam an Überhängen'},
+    ],
+    Herbst: [
+      {name:'Schwere Nymphe',      typ:'Fliegenfischen', base:82, tags:['aktiv','kalt'], grundBase:'Äsche aktiv! Forelle Schonzeit', methode:'Euro-Nymphing sehr tief'},
+      {name:'Midge Trockenfliege', typ:'Fliegenfischen', base:75, tags:['aktiv','windstill'], grundBase:'Midge-Hatches für Äsche', methode:'Drag-free ruhige Stelle'},
+      {name:'Soft Hackle nass',    typ:'Fliegenfischen', base:68, tags:['passiv','kalt'], grundBase:'Schlüpfende Insekten imitieren', methode:'Quer + abwärts'},
+      {name:'Löffel 6g',           typ:'Hardbait', base:62, tags:['aktiv','trüb'], grundBase:'Trübes Herbstwasser gut', methode:'Langsam taumeln lassen'},
+      {name:'Inline-Spinner',      typ:'Hardbait', base:58, tags:['aktiv','tag'], grundBase:'Noch aktive Restforellen', methode:'Mittelschnell'},
+    ],
+    Winter: [
+      {name:'Tungsten Bead-Nymphe', typ:'Fliegenfischen', base:85, tags:['passiv','kalt'], grundBase:'Beste Äschenzeit! Tief am Grund', methode:'Tschech. Nymphing'},
+      {name:'Kleine Nass-Fliege',   typ:'Fliegenfischen', base:72, tags:['passiv','kalt'], grundBase:'Soft Hackle imitiert Insekten', methode:'Quer zur Strömung'},
+      {name:'Micro-Spinner 2g',     typ:'Hardbait', base:58, tags:['passiv','kalt'], grundBase:'Sehr langsam in Stromrinne', methode:'Minimal über Grund'},
+      {name:'Kleine Nymphe Olive',  typ:'Fliegenfischen', base:65, tags:['passiv','windstill'], grundBase:'Winteroliven in ruhigen Kolken', methode:'Indicator, tief treiben'},
+      {name:'Goldkopf-Nymphe',      typ:'Fliegenfischen', base:68, tags:['kalt','passiv'], grundBase:'Glänzender Kopf zieht Äsche', methode:'Euro-Nymphing'},
+    ]
+  }
+};
+// Alias Frühjahr = Frühling
+Object.keys(BAIT_POOL).forEach(function(f){
+  if(BAIT_POOL[f]['Frühling'] && !BAIT_POOL[f]['Frühjahr'])
+    BAIT_POOL[f]['Frühjahr'] = BAIT_POOL[f]['Frühling'];
+});
+
+
+// ServiceWorker disabled (sw.js not present)
+
+// ── FANGTAGEBUCH ─────────────────────────────────────────────────────────
+
+let catches = [];
+let currentCatchPhoto = null;
+let currentCatchFish  = 'Zander';
+let editingCatchId    = null;
+let diaryFilter       = 'all';
+
+// LocalStorage laden
+function loadCatches(){
+  try{
+    const stored = localStorage.getItem('petri_catches');
+    catches = stored ? JSON.parse(stored) : [];
+  }catch(e){ catches = []; }
+}
+
+function saveCatches(){
+  try{ localStorage.setItem('petri_catches', JSON.stringify(catches)); }catch(e){}
+}
+
+// Overlay öffnen
+function openAddCatch(){
+  editingCatchId = null;
+  currentCatchPhoto = null;
+  document.getElementById('add-catch-title').textContent = 'Fang eintragen';
+
+  // Felder zurücksetzen
+  document.getElementById('catch-length').value   = '';
+  document.getElementById('catch-weight').value   = '';
+  document.getElementById('catch-bait').value     = '';
+  document.getElementById('catch-notes').value    = '';
+  document.getElementById('catch-water').value    = cWater;
+
+  // Datum/Zeit auf jetzt
+  const now = new Date();
+  const pad = function(n){ return String(n).padStart(2,'0'); };
+  document.getElementById('catch-datetime').value =
+    now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+'T'+pad(now.getHours())+':'+pad(now.getMinutes());
+
+  // Fischart Reset
+  currentCatchFish = cFish || 'Zander';
+  document.querySelectorAll('.fish-select-btn').forEach(function(b){
+    const active = b.dataset.fish === currentCatchFish;
+    b.style.background = active ? 'var(--accent-dim)' : 'var(--bg-input)';
+    b.style.color      = active ? 'var(--accent)' : 'var(--text-muted)';
+    b.style.borderColor= active ? 'var(--accent)' : 'transparent';
+  });
+
+  // Foto-Preview zurücksetzen
+  const prev = document.getElementById('photo-preview');
+  prev.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>'
+    +'<div style="font-size:12px;color:var(--text-muted);margin-top:8px;">Foto aufnehmen oder wählen</div>';
+
+  // Wetter-Snapshot
+  const wDisp = document.getElementById('catch-weather-display');
+  const bits = [];
+  if(apiData.airTemp    !=null) bits.push('🌡 '+apiData.airTemp+'°C');
+  if(apiData.windSpeed  !=null) bits.push('💨 '+apiData.windSpeed+' km/h');
+  if(apiData.cloudcover !=null) bits.push('☁️ '+apiData.cloudcover+'%');
+  if(apiData.waterTemp  !=null) bits.push('🌊 '+apiData.waterTemp+'°C Wasser');
+  if(apiData.pressure   !=null) bits.push('📊 '+apiData.pressure+' hPa');
+  wDisp.innerHTML = bits.length
+    ? bits.map(function(b){ return '<span style="font-size:12px;color:var(--text-sec);background:var(--bg-input);padding:3px 8px;border-radius:8px;">'+b+'</span>'; }).join('')
+    : '<span style="font-size:12px;color:var(--text-muted);">Keine Wetterdaten verfügbar</span>';
+
+  const overlay = document.getElementById('add-catch-overlay');
+  overlay.style.display = 'flex';
+}
+
+function closeAddCatch(){
+  document.getElementById('add-catch-overlay').style.display = 'none';
+}
+
+function triggerCamera(){
+  document.getElementById('camera-input').click();
+}
+
+function handlePhoto(input){
+  if(!input.files||!input.files[0]) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e){
+    currentCatchPhoto = e.target.result;
+    const prev = document.getElementById('photo-preview');
+    prev.innerHTML = '<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px;"/>'
+      +'<div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.6);border-radius:8px;padding:4px 8px;font-size:11px;color:white;">Ändern</div>';
+  };
+  reader.readAsDataURL(file);
+}
+
+function selectCatchFish(el, fish){
+  currentCatchFish = fish;
+  document.querySelectorAll('.fish-select-btn').forEach(function(b){
+    const active = b.dataset.fish === fish;
+    b.style.background  = active ? 'var(--accent-dim)' : 'var(--bg-input)';
+    b.style.color       = active ? 'var(--accent)' : 'var(--text-muted)';
+    b.style.borderColor = active ? 'var(--accent)' : 'transparent';
+  });
+}
+
+function saveCatch(){
+  const length   = parseFloat(document.getElementById('catch-length').value)   || null;
+  const weight   = parseFloat(document.getElementById('catch-weight').value)   || null;
+  const bait     = document.getElementById('catch-bait').value.trim();
+  const water    = document.getElementById('catch-water').value.trim() || cWater;
+  const notes    = document.getElementById('catch-notes').value.trim();
+  const datetime = document.getElementById('catch-datetime').value;
+
+  if(!datetime){ alert('Bitte Datum und Zeit eingeben.'); return; }
+
+  const entry = {
+    id:       editingCatchId || Date.now(),
+    fish:     currentCatchFish,
+    length:   length,
+    weight:   weight,
+    bait:     bait,
+    water:    water,
+    notes:    notes,
+    datetime: datetime,
+    photo:    currentCatchPhoto,
+    weather: {
+      airTemp:    apiData.airTemp,
+      waterTemp:  apiData.waterTemp,
+      windSpeed:  apiData.windSpeed,
+      cloudcover: apiData.cloudcover,
+      pressure:   apiData.pressure,
+      trend:      apiData.pressureTrend
+    },
+    lat: cLat, lng: cLng
+  };
+
+  if(editingCatchId){
+    const idx = catches.findIndex(function(c){ return c.id === editingCatchId; });
+    if(idx>=0) catches[idx] = entry;
+  } else {
+    catches.unshift(entry);
+  }
+  saveCatches();
+  closeAddCatch();
+  renderDiaryList();
+  renderDiaryStats();
+}
+
+// Eintrag löschen
+let pendingDeleteId = null;
+function deleteCatch(){
+  if(!pendingDeleteId) return;
+  catches = catches.filter(function(c){ return c.id !== pendingDeleteId; });
+  saveCatches();
+  closeCatchDetail();
+  renderDiaryList();
+  renderDiaryStats();
+}
+
+// Filter
+function filterDiary(f){
+  diaryFilter = f;
+  document.querySelectorAll('.diary-filter').forEach(function(el){
+    const active = el.dataset.filter === f;
+    el.style.background  = active ? 'rgba(79,168,110,.12)' : 'var(--bg-input)';
+    el.style.color       = active ? 'var(--accent)' : 'var(--text-muted)';
+    el.style.borderColor = active ? 'rgba(79,168,110,.25)' : 'transparent';
+  });
+  renderDiaryList();
+}
+
+function getFilteredCatches(){
+  if(diaryFilter==='all') return catches;
+  return catches.filter(function(c){ return c.fish===diaryFilter; });
+}
+
+// Stats
+function renderDiaryStats(){
+  document.getElementById('stat-total').textContent = catches.length;
+  const lengths = catches.filter(function(c){ return c.length; }).map(function(c){ return c.length; });
+  document.getElementById('stat-biggest').textContent = lengths.length ? Math.max.apply(null,lengths) : '–';
+  const now = new Date(); const m = now.getMonth(), y = now.getFullYear();
+  const thisMonth = catches.filter(function(c){
+    const d = new Date(c.datetime); return d.getMonth()===m && d.getFullYear()===y;
+  }).length;
+  document.getElementById('stat-this-month').textContent = thisMonth;
+}
+
+// Liste rendern
+function renderDiaryList(){
+  const list    = document.getElementById('diary-list');
+  const empty   = document.getElementById('diary-empty');
+  const filtered = getFilteredCatches();
+
+  if(!filtered.length){
+    empty.style.display = 'block';
+    // Remove existing cards
+    list.querySelectorAll('.diary-card').forEach(function(el){ el.remove(); });
+    return;
+  }
+  empty.style.display = 'none';
+
+  const fishColors = {Zander:'var(--accent)',Hecht:'var(--accent-amber)',Barsch:'var(--accent-yellow)',Forelle:'var(--accent-water)',Andere:'var(--text-sec)'};
+  const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+  list.querySelectorAll('.diary-card').forEach(function(el){ el.remove(); });
+
+  filtered.forEach(function(c){
+    const d   = new Date(c.datetime);
+    const col = fishColors[c.fish] || 'var(--text-sec)';
+    const card = document.createElement('div');
+    card.className = 'diary-card';
+    card.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:16px;margin-bottom:10px;overflow:hidden;cursor:pointer;';
+    card.onclick = function(){ openCatchDetail(c.id); };
+
+    const photoHTML = c.photo
+      ? '<div style="width:80px;height:80px;flex-shrink:0;overflow:hidden;border-radius:10px;"><img src="'+c.photo+'" style="width:100%;height:100%;object-fit:cover;"/></div>'
+      : '<div style="width:80px;height:80px;flex-shrink:0;background:var(--bg-elevated);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:28px;">🐟</div>';
+
+    const sizeStr = [c.length?c.length+' cm':null, c.weight?formatWeight(c.weight):null].filter(Boolean).join(' · ') || 'Keine Maße';
+
+    card.innerHTML = '<div style="display:flex;gap:12px;padding:14px;">'
+      + photoHTML
+      + '<div style="flex:1;min-width:0;">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">'
+      + '<span style="font-size:16px;font-weight:600;color:'+col+';">'+c.fish+'</span>'
+      + '<span style="font-size:11px;color:var(--text-muted);">'+d.getDate()+'. '+months[d.getMonth()]+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0')+'</span>'
+      + '</div>'
+      + '<div style="font-size:13px;font-weight:500;margin-bottom:3px;">'+sizeStr+'</div>'
+      + (c.bait?'<div style="font-size:12px;color:var(--accent-water);margin-bottom:3px;">🪱 '+c.bait+'</div>':'')
+      + '<div style="font-size:11px;color:var(--text-muted);">📍 '+c.water+'</div>'
+      + '</div></div>';
+
+    list.appendChild(card);
+  });
+}
+
+function formatWeight(g){
+  return g>=1000 ? (g/1000).toFixed(2).replace('.',',')+' kg' : g+' g';
+}
+
+// Detail-Overlay
+function openCatchDetail(id){
+  const c = catches.find(function(e){ return e.id===id; });
+  if(!c) return;
+  pendingDeleteId = id;
+
+  const d = new Date(c.datetime);
+  const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  const fishColors = {Zander:'var(--accent)',Hecht:'var(--accent-amber)',Barsch:'var(--accent-yellow)',Forelle:'var(--accent-water)',Andere:'var(--text-sec)'};
+  const col = fishColors[c.fish]||'var(--text-sec)';
+
+  document.getElementById('detail-catch-title').textContent = c.fish + (c.length?' · '+c.length+' cm':'');
+
+  const w = c.weather||{};
+  const weatherBits = [
+    w.airTemp  !=null?'🌡 '+w.airTemp+'°C':null,
+    w.waterTemp!=null?'🌊 '+w.waterTemp+'°C':null,
+    w.windSpeed!=null?'💨 '+w.windSpeed+' km/h':null,
+    w.cloudcover!=null?'☁️ '+w.cloudcover+'%':null,
+    w.pressure !=null?'📊 '+w.pressure+' hPa':null,
+  ].filter(Boolean);
+
+  document.getElementById('catch-detail-content').innerHTML =
+    (c.photo?'<img src="'+c.photo+'" style="width:100%;max-height:260px;object-fit:cover;border-radius:16px;margin-bottom:14px;"/>':'')
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">'
+    +'<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;">'
+    +'<div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;">Fischart</div>'
+    +'<div style="font-size:16px;font-weight:600;color:'+col+';">'+c.fish+'</div></div>'
+    +'<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;">'
+    +'<div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;">Datum</div>'
+    +'<div style="font-size:13px;font-weight:500;">'+d.getDate()+'. '+months[d.getMonth()]+' '+d.getFullYear()+'<br>'+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0')+' Uhr</div></div>'
+    +(c.length?'<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;"><div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;">Länge</div><div style="font-size:20px;font-weight:700;color:var(--accent-yellow);">'+c.length+' cm</div></div>':'')
+    +(c.weight?'<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;"><div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;">Gewicht</div><div style="font-size:20px;font-weight:700;color:var(--accent-amber);">'+formatWeight(c.weight)+'</div></div>':'')
+    +'</div>'
+    +(c.bait?'<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:10px;"><div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;">Köder</div><div style="font-size:14px;color:var(--accent-water);">🪱 '+c.bait+'</div></div>':'')
+    +'<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:10px;"><div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;">Gewässer</div><div style="font-size:13px;">📍 '+c.water+'</div></div>'
+    +(weatherBits.length?'<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:10px;"><div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">Wetterbedingungen</div><div style="display:flex;flex-wrap:wrap;gap:6px;">'+weatherBits.map(function(b){return'<span style="font-size:12px;background:var(--bg-input);padding:3px 8px;border-radius:8px;color:var(--text-sec);">'+b+'</span>';}).join('')+'</div></div>':'')
+    +(c.notes?'<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:10px;"><div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;">Notizen</div><div style="font-size:13px;line-height:1.6;color:var(--text-sec);">'+c.notes+'</div></div>':'')
+    +'<div style="height:20px;"></div>';
+
+  document.getElementById('catch-detail-overlay').style.display = 'flex';
+}
+
+function closeCatchDetail(){
+  document.getElementById('catch-detail-overlay').style.display = 'none';
+  pendingDeleteId = null;
+}
+
+// goTo diary: render list
+const _goToOrig = goTo;
+goTo = function(n){
+  _goToOrig(n);
+  if(n==='diary'){
+    renderDiaryList();
+    renderDiaryStats();
+  }
+};
+
+// ── DEBUG WEATHER REFRESH ────────────────────────────────────────────────
+async function debugRefreshWeather(){
+  const upd=document.getElementById('w-updated');
+  const dot=document.getElementById('w-status');
+  if(upd) upd.textContent='teste…';
+  // Force reset
+  weatherFetching=false;
+  await refreshWeather();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+loadCatches();
+updateClock();
+setInterval(updateClock,30000);
+updateHomeScore();
+renderBaits('Zander',cSeason);
+document.querySelectorAll('.season-chip').forEach(c=>{const a=c.dataset.s===cSeason;c.style.background=a?'rgba(79,168,110,.12)':'var(--bg-input)';c.style.color=a?'var(--accent)':'var(--text-muted)';c.style.borderColor=a?'rgba(79,168,110,.25)':'transparent';});
+refreshWeather();
+setInterval(refreshWeather,600000);
+</script>
+</body>
+</html>
