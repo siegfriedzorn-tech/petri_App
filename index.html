@@ -373,6 +373,14 @@ window.addEventListener('resize',applyMobileMode);
       <span style="font-size:10px;color:var(--text-muted);" id="ki-slider-note"></span>
     </div>
     <div style="padding:0 20px 16px;" id="ki-bait-list"></div>
+    <!-- Forum-Köder nach Sync -->
+    <div id="forum-bait-section" style="display:none;margin-top:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">📡 Aktuell aus Foren gemeldet</div>
+        <div style="font-size:10px;color:var(--text-muted);" id="forum-bait-age"></div>
+      </div>
+      <div id="forum-bait-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
   </div>
   </div>
   <div class="detail-overlay" id="detail-overlay">
@@ -3372,6 +3380,57 @@ function renderForumResult(result, fromCache){
   }
 
   panel.style.display = 'block';
+
+  // ── Forum-Köder im Köder-Tab anzeigen ──────────────────────────────────
+  renderForumBaits(result);
+}
+
+function renderForumBaits(result){
+  const section  = document.getElementById('forum-bait-section');
+  const list     = document.getElementById('forum-bait-list');
+  const ageEl    = document.getElementById('forum-bait-age');
+  if(!section || !list) return;
+
+  const baits = result.baits || [];
+  const catches = result.catches || [];
+  if(baits.length === 0 && catches.length === 0){
+    section.style.display = 'none';
+    return;
+  }
+
+  if(ageEl) ageEl.textContent = result.dataAge || '';
+
+  // Build bait cards from forum data
+  let html = '';
+
+  // Reported catches with bait info
+  catches.slice(0,3).forEach(function(c){
+    html += '<div style="background:var(--bg-elevated);border-radius:12px;padding:11px 14px;display:flex;align-items:flex-start;gap:10px;">'
+      + '<div style="font-size:18px;margin-top:1px;">🎣</div>'
+      + '<div style="flex:1;">'
+      + '<div style="font-size:12px;font-weight:500;color:var(--text-pri);">' + c + '</div>'
+      + '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Fangmeldung aus Forum</div>'
+      + '</div>'
+      + '<div style="font-size:9px;background:rgba(79,168,110,.15);color:var(--accent);padding:2px 7px;border-radius:6px;white-space:nowrap;">gemeldet</div>'
+      + '</div>';
+  });
+
+  // Specifically named baits
+  baits.slice(0,3).forEach(function(b){
+    html += '<div style="background:var(--bg-elevated);border:1px solid rgba(79,168,110,.2);border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:10px;">'
+      + '<div style="font-size:18px;">⭐</div>'
+      + '<div style="flex:1;">'
+      + '<div style="font-size:13px;font-weight:600;color:var(--text-pri);">' + b + '</div>'
+      + '<div style="font-size:10px;color:var(--text-muted);margin-top:1px;">Aktuell empfohlen in Foren & Social</div>'
+      + '</div>'
+      + '<div style="font-size:9px;background:rgba(79,168,110,.25);color:var(--accent);padding:2px 7px;border-radius:6px;white-space:nowrap;">top</div>'
+      + '</div>';
+  });
+
+  list.innerHTML = html;
+  section.style.display = 'block';
+
+  // Auch wenn Köder-Tab nicht offen ist: merken für nächsten Besuch
 }
 
 function updateScoreDisplay(score){
