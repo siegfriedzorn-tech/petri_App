@@ -2,7 +2,7 @@
   "name": "Petri – Angelführer",
   "short_name": "Petri",
   "description": "KI-gestützter Angelführer mit Echtzeit-Wetterdaten, Fang-Score und Gewässerkarte",
-  "start_url": "./fishing_app_prototype.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#080f0a",
@@ -22,29 +22,20 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "screenshot-home.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Fang-Score Dashboard"
-    }
-  ],
   "categories": ["sports", "lifestyle", "navigation"],
   "shortcuts": [
     {
       "name": "Fang-Score",
       "short_name": "Score",
       "description": "Aktuellen Fang-Score anzeigen",
-      "url": "./fishing_app_prototype.html#home",
+      "url": "./index.html#home",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Gewässerkarte",
       "short_name": "Karte",
       "description": "Karte und Hotspots öffnen",
-      "url": "./fishing_app_prototype.html#map",
+      "url": "./index.html#map",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ]

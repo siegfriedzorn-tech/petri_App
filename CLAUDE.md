@@ -47,18 +47,16 @@ Sechs Screens, umgeschaltet über `goTo(name)` per CSS-Klasse `.active`:
 
 ## Bekannte Baustellen
 
-1. `manifest.json` und `sw.js` verweisen auf `fishing_app_prototype.html` –
-   diese Datei existiert nicht mehr, sie heißt `index.html`. Dadurch schlägt
-   `cache.addAll()` im Install-Event fehl (atomar!) und der Service Worker
-   installiert sich nie. Auch die im Manifest genannten Screenshots fehlen.
-2. Der Service Worker wird in `index.html` gar nicht erst registriert – dort
-   steht nur ein Kommentar "ServiceWorker disabled".
-3. `loadForecast()` ist zweimal definiert. Die zweite Definition gewinnt.
+1. `STATIC_ASSETS` in `sw.js` mischt lokale Dateien mit drei CDN-URLs.
+   `cache.addAll()` ist atomar: ist eine CDN-URL beim Install nicht
+   erreichbar, bleibt der gesamte App-Shell-Cache leer. Der Fehler landet
+   nur in einem `console.warn`, die App wirkt normal – bis man offline geht.
+2. `loadForecast()` ist zweimal definiert. Die zweite Definition gewinnt.
    Der gesamte Block davor ist toter Code: `fetchForecast`,
    `computeHourlyScore`, `getFishDepth`, `renderSwarmData`.
-4. Im `<head>` stehen zwei Mobile-Fix-Skripte, die sich widersprechen
+3. Im `<head>` stehen zwei Mobile-Fix-Skripte, die sich widersprechen
    (`position:fixed` vs. `position:static`). Beide hängen am resize-Event.
-5. Über 500 Inline-Styles im HTML. Blockiert jede zentrale Designänderung,
+4. Über 500 Inline-Styles im HTML. Blockiert jede zentrale Designänderung,
    weil Farben und Abstände nicht in Klassen liegen.
 
 ## Arbeitsweise

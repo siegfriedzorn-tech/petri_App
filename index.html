@@ -2060,7 +2060,15 @@ Object.keys(BAIT_POOL).forEach(function(f){
 });
 
 
-// ServiceWorker disabled (sw.js not present)
+// ── SERVICE WORKER ───────────────────────────────────────────────────────
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('./sw.js')
+      .then(function(reg){ console.log('[SW] registriert, Scope:', reg.scope); })
+      .catch(function(err){ console.warn('[SW] Registrierung fehlgeschlagen:', err); });
+  });
+}
 
 // ── FANGTAGEBUCH ─────────────────────────────────────────────────────────
 

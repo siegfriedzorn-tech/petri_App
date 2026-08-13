@@ -7,7 +7,7 @@ const CACHE_API    = 'petri-api-v1.1';
 
 // App-Shell: alles was die App zum Starten braucht
 const STATIC_ASSETS = [
-  './fishing_app_prototype.html',
+  './index.html',
   './manifest.json',
   'https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
@@ -161,7 +161,7 @@ self.addEventListener('push', event => {
       badge: './icon-192.png',
       tag: 'petri-score',
       renotify: true,
-      data: { url: data.url || './fishing_app_prototype.html' }
+      data: { url: data.url || './index.html' }
     })
   );
 });
@@ -169,7 +169,7 @@ self.addEventListener('push', event => {
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   event.waitUntil(
-    clients.openWindow(event.notification.data?.url || './fishing_app_prototype.html')
+    clients.openWindow(event.notification.data?.url || './index.html')
   );
 });
 
