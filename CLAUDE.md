@@ -44,19 +44,19 @@ Sechs Screens, umgeschaltet über `goTo(name)` per CSS-Klasse `.active`:
   `--bg-elevated`, `--text-pri`, `--text-sec`, `--text-muted`, `--border`
 - Kein Framework, kein npm, kein Bundler – bitte auch keins einführen
 - Zielgerät ist das Handy; alles muss mit Daumenbedienung funktionieren
+- Nach Änderungen an `index.html` die Cache-Version in `sw.js` hochzählen
+  (`CACHE_NAME`, `CACHE_STATIC`, `CACHE_API`). Der Fetch-Handler ist
+  Cache-first ohne Revalidierung – ohne neuen Cache-Namen bekommen
+  wiederkehrende Nutzer dauerhaft die alte App-Shell.
 
 ## Bekannte Baustellen
 
-1. `STATIC_ASSETS` in `sw.js` mischt lokale Dateien mit drei CDN-URLs.
-   `cache.addAll()` ist atomar: ist eine CDN-URL beim Install nicht
-   erreichbar, bleibt der gesamte App-Shell-Cache leer. Der Fehler landet
-   nur in einem `console.warn`, die App wirkt normal – bis man offline geht.
-2. `loadForecast()` ist zweimal definiert. Die zweite Definition gewinnt.
+1. `loadForecast()` ist zweimal definiert. Die zweite Definition gewinnt.
    Der gesamte Block davor ist toter Code: `fetchForecast`,
    `computeHourlyScore`, `getFishDepth`, `renderSwarmData`.
-3. Im `<head>` stehen zwei Mobile-Fix-Skripte, die sich widersprechen
+2. Im `<head>` stehen zwei Mobile-Fix-Skripte, die sich widersprechen
    (`position:fixed` vs. `position:static`). Beide hängen am resize-Event.
-4. Über 500 Inline-Styles im HTML. Blockiert jede zentrale Designänderung,
+3. Über 500 Inline-Styles im HTML. Blockiert jede zentrale Designänderung,
    weil Farben und Abstände nicht in Klassen liegen.
 
 ## Arbeitsweise

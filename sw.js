@@ -1,14 +1,19 @@
-// Petri Angelführer – Service Worker v1.1
+// Petri Angelführer – Service Worker v1.2
 // Strategie: Cache-first für App-Shell, Network-first für API-Daten
 
-const CACHE_NAME = 'petri-v1.1';
-const CACHE_STATIC = 'petri-static-v1.1';
-const CACHE_API    = 'petri-api-v1.1';
+const CACHE_NAME = 'petri-v1.2';
+const CACHE_STATIC = 'petri-static-v1.2';
+const CACHE_API    = 'petri-api-v1.2';
 
-// App-Shell: alles was die App zum Starten braucht
-const STATIC_ASSETS = [
+// Lokale App-Shell: ohne die startet die App offline nicht, muss vollständig sein
+const STATIC_LOCAL = [
   './index.html',
   './manifest.json',
+];
+
+// Externe Assets: nice-to-have. Ein Ausfall beim Install darf die App-Shell
+// nicht mitreißen, deshalb einzeln statt über addAll().
+const STATIC_CDN = [
   'https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
@@ -25,9 +30,25 @@ const API_CACHE_DURATION = {
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_STATIC)
-      .then(cache => cache.addAll(STATIC_ASSETS))
-      .then(() => self.skipWaiting())
-      .catch(err => console.warn('Cache install error:', err))
+      .then(async cache => {
+        // Atomar: schlägt das fehl, soll auch der Install fehlschlagen
+        await cache.addAll(STATIC_LOCAL);
+
+        // Einzeln: jedes CDN-Asset darf für sich scheitern
+        const results = await Promise.allSettled(STATIC_CDN.map(url => cache.add(url)));
+        results.forEach((r, i) => {
+          if (r.status === 'rejected')
+            console.warn('[SW] CDN-Asset nicht gecacht:', STATIC_CDN[i], r.reason);
+        });
+
+        await self.skipWaiting();
+      })
+      .catch(err => {
+        // Install scheitern lassen, damit der Browser es später erneut versucht –
+        // besser als ein aktiver SW ohne App-Shell im Cache
+        console.error('[SW] Install fehlgeschlagen, App-Shell nicht gecacht:', err);
+        throw err;
+      })
   );
 });
 
@@ -173,4 +194,4 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-console.log('[SW] Petri Service Worker v1.1 geladen');
+console.log('[SW] Petri Service Worker v1.2 geladen');
