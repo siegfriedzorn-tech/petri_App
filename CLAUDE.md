@@ -51,12 +51,9 @@ Sechs Screens, umgeschaltet über `goTo(name)` per CSS-Klasse `.active`:
 
 ## Bekannte Baustellen
 
-1. `loadForecast()` ist zweimal definiert. Die zweite Definition gewinnt.
-   Der gesamte Block davor ist toter Code: `fetchForecast`,
-   `computeHourlyScore`, `getFishDepth`, `renderSwarmData`.
-2. Im `<head>` stehen zwei Mobile-Fix-Skripte, die sich widersprechen
+1. Im `<head>` stehen zwei Mobile-Fix-Skripte, die sich widersprechen
    (`position:fixed` vs. `position:static`). Beide hängen am resize-Event.
-3. Über 500 Inline-Styles im HTML. Blockiert jede zentrale Designänderung,
+2. Über 500 Inline-Styles im HTML. Blockiert jede zentrale Designänderung,
    weil Farben und Abstände nicht in Klassen liegen.
 
 ## Arbeitsweise

@@ -1,9 +1,9 @@
-// Petri Angelführer – Service Worker v1.2
+// Petri Angelführer – Service Worker v1.3
 // Strategie: Cache-first für App-Shell, Network-first für API-Daten
 
-const CACHE_NAME = 'petri-v1.2';
-const CACHE_STATIC = 'petri-static-v1.2';
-const CACHE_API    = 'petri-api-v1.2';
+const CACHE_NAME = 'petri-v1.3';
+const CACHE_STATIC = 'petri-static-v1.3';
+const CACHE_API    = 'petri-api-v1.3';
 
 // Lokale App-Shell: ohne die startet die App offline nicht, muss vollständig sein
 const STATIC_LOCAL = [
@@ -194,4 +194,4 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-console.log('[SW] Petri Service Worker v1.2 geladen');
+console.log('[SW] Petri Service Worker v1.3 geladen');
